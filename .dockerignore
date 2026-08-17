@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+uploads
+temp_uploads
+db.json
+.env*
+npm-debug.log*
+.DS_Store

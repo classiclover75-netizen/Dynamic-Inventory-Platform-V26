@@ -1,0 +1,40 @@
+services:
+  db:
+    image: mongo:8
+    restart: always
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval \"try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'db:27017' }] }) }\""]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    volumes:
+      - mongo_data:/data/db
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: always
+    volumes:
+      - ./uploads:/app/uploads
+    environment:
+      - MONGODB_URI=mongodb://db:27017/inventory?replicaSet=rs0
+      - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+
+  inventory-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
