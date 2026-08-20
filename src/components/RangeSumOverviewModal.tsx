@@ -5,6 +5,7 @@ import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
 import { useSaleColumnSearch } from '../hooks/useSaleColumnSearch';
 import { parseMultiSource } from '../lib/appUtils';
 import { resolveChipRender } from '../lib/colorRender';
+import { formatCellDisplay } from '../lib/formatCellDisplay';
 import { Column, RowData } from '../types';
 
 interface RangeSumOverviewModalProps {
@@ -24,6 +25,8 @@ export function RangeSumOverviewModal({
 }: RangeSumOverviewModalProps) {
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
   const [showSaleColumns, setShowSaleColumns] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = React.useDeferredValue(searchQuery);
 
   const { selectedKeys, toggle, selectRange, clear, selectAll, anchorKey } = useSaleColumnRangeSelect();
   const orderedSaleColKeys = useMemo(() => saleCols.map(c => c.key), [saleCols]);
@@ -32,6 +35,7 @@ export function RangeSumOverviewModal({
     if (isOpen) {
       selectAll(orderedSaleColKeys);
       setShowSaleColumns(true);
+      setSearchQuery("");
     }
   }, [isOpen, selectAll, orderedSaleColKeys]);
 
@@ -49,15 +53,94 @@ export function RangeSumOverviewModal({
     clearAll: clearAllSaleTerms
   } = useSaleColumnSearch();
 
-  const sourceColumns = useMemo(() => {
-    let cols = saleCols;
-    if (!showSaleColumns) {
-      cols = [];
-    } else if (saleEffectiveTerms.length > 0) {
-      cols = cols.filter(c => saleEffectiveTerms.some(term => c.name.toLowerCase().includes(term)));
+  const visibleColumns = useMemo(() => {
+    return columns.filter(c => {
+      if (c.key === 'sr') return false;
+      if (c.type === 'sale_tracker') {
+        if (!showSaleColumns) return false;
+        if (saleEffectiveTerms.length > 0) {
+          return saleEffectiveTerms.some(term => c.name.toLowerCase().includes(term));
+        }
+      }
+      return true;
+    });
+  }, [columns, showSaleColumns, saleEffectiveTerms]);
+
+  const saleTrackerColsVisible = useMemo(() => visibleColumns.filter(c => c.type === 'sale_tracker'), [visibleColumns]);
+
+  const filteredRows = useMemo(() => {
+    if (!deferredSearchQuery) return rows;
+    const tokens = deferredSearchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    return rows.filter(row => {
+      return tokens.every(token => {
+        return visibleColumns.some(c => {
+          const rawVal = row[c.key];
+          const strVal = formatCellDisplay(rawVal).toLowerCase();
+          return strVal.includes(token);
+        });
+      });
+    });
+  }, [rows, deferredSearchQuery, visibleColumns]);
+
+  const getImageUrl = (val: any) => {
+    if (!val) return "";
+    let data = val;
+    if (Array.isArray(val) && val.length > 0) {
+      data = val[0];
     }
-    return cols;
-  }, [saleCols, showSaleColumns, saleEffectiveTerms]);
+    const imgData = typeof data === "object" && data !== null ? data.data || data.url || data.name : data;
+    if (!imgData) return "";
+    if (typeof imgData === "string" && (imgData.startsWith("data:image") || /^https?:\/\//i.test(imgData))) {
+      return imgData;
+    }
+    return `/uploads/${imgData}`;
+  };
+
+  const highlightText = (text: string, query: string) => {
+    const cleanText = text
+      ? String(text)
+          .replace(/<[^>]*>/g, "")
+          .replace(/<br\s*\/?>/gi, " ")
+          .replace(/&nbsp;/gi, " ")
+      : "";
+    if (!query || !cleanText) return cleanText;
+    const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return cleanText;
+
+    const escapedStrings = tokens.map((t) => {
+      const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      let bStart = "";
+      let bEnd = "";
+      if (/^[0-9]/.test(t)) {
+        bStart = "(?<![0-9])";
+        bEnd = "";
+      } else if (/^[a-zA-Z]/.test(t)) {
+        if (t.length <= 2) {
+          bStart = "(?<![a-zA-Z])";
+          bEnd = "(?![a-zA-Z]{2,})";
+        } else {
+          bStart = "";
+          bEnd = "";
+        }
+      }
+      return bStart + escaped + bEnd;
+    });
+
+    const regex = new RegExp("(" + escapedStrings.join("|") + ")", "gi");
+    const parts = cleanText.split(regex);
+    return parts.map((part, i) =>
+      regex.test(part) ? (
+        <span
+          key={i}
+          className="bg-yellow-300 text-black font-bold px-[1px] rounded-sm"
+        >
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    );
+  };
 
   const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200') => {
     const breakdown = parseMultiSource(rawVal);
@@ -97,7 +180,7 @@ export function RangeSumOverviewModal({
     let hasValues = false;
 
     selectedKeys.forEach(key => {
-      if (sourceColumns.some(c => c.key === key)) {
+      if (saleTrackerColsVisible.some(c => c.key === key)) {
         const sources = parseMultiSource(row[key]);
         sources.forEach(s => {
           const qty = parseFloat(s.qty);
@@ -121,7 +204,7 @@ export function RangeSumOverviewModal({
   };
 
   const handleApply = () => {
-    const validSelectedCols = sourceColumns.filter(c => selectedKeys.has(c.key));
+    const validSelectedCols = saleTrackerColsVisible.filter(c => selectedKeys.has(c.key));
     if (validSelectedCols.length === 0) {
       onApply("None", "None", []);
       return;
@@ -175,18 +258,34 @@ export function RangeSumOverviewModal({
                  </div>
                  {saleEffectiveTerms.length > 0 && (
                    <div className="px-2.5 py-0.5 text-xs text-blue-900 bg-blue-100 rounded-full whitespace-nowrap">
-                     {sourceColumns.length}/{saleCols.length} sale columns
+                     {saleTrackerColsVisible.length}/{saleCols.length} sale columns
                    </div>
                  )}
                </div>
              )}
            </div>
            <div className="flex items-center gap-2 shrink-0">
-             <Button variant="primary" onClick={handleApply}>
+             <Button variant="blue" onClick={handleApply}>
                Apply to Page
              </Button>
            </div>
         </div>
+
+        <div className="flex flex-col gap-2 mb-2 shrink-0">
+          <div className="relative w-full border border-gray-300 rounded-md bg-white">
+            <Search
+              className="absolute left-2 top-2.5 text-gray-400"
+              size={16}
+            />
+            <Input
+              className="pl-8 w-full !border-0 focus:!border-transparent"
+              placeholder="Filter rows..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         {showSaleColumns && saleSavedTerms.length > 0 && (
           <div className="flex flex-col gap-2 mb-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -222,11 +321,13 @@ export function RangeSumOverviewModal({
                 <th className="p-2 border text-left bg-blue-50 text-blue-800 sticky left-[60px] z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400" style={{ width: 220, minWidth: 220 }}>
                   Total Sale Range Column Sum
                 </th>
-                {sourceColumns.map((c, i) => {
-                  const isUncheckedSaleCol = !selectedKeys.has(c.key);
+                {visibleColumns.map((c, i) => {
+                  const isSale = c.type === 'sale_tracker';
+                  const isUncheckedSaleCol = isSale && !selectedKeys.has(c.key);
                   return (
-                  <th key={c.key} className="p-2 border text-left relative" style={{ width: colWidth, minWidth: colWidth }}>
+                  <th key={c.key} className={`p-2 border text-left relative ${!isSale ? 'bg-gray-100' : ''}`} style={{ width: isSale ? colWidth : 150, minWidth: isSale ? colWidth : 150 }}>
                     <div className="flex items-start justify-between w-full"><div className="flex items-start gap-1 min-w-0">
+                      {isSale && (
                       <span className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors cursor-pointer hover:bg-gray-300 mr-1 ${selectedKeys.has(c.key) ? 'bg-blue-100' : ''} ${c.key === anchorKey ? 'ring-2 ring-purple-500' : ''}`}>
                         <input
                           type="checkbox"
@@ -243,9 +344,11 @@ export function RangeSumOverviewModal({
                           }}
                         />
                       </span>
+                      )}
                       <span className={`${isUncheckedSaleCol ? 'opacity-40 grayscale-[0.5] ' : ''}break-words whitespace-normal`}>
-                        {i + 1}. {(() => {
-                          if (saleEffectiveTerms.length === 0) return c.name;
+                        {isSale && <>{saleCols.indexOf(c) + 1}. </>}
+                        {(() => {
+                          if (!isSale || saleEffectiveTerms.length === 0) return c.name;
                           const escapedTerms = saleEffectiveTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
                           const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
                           const parts = String(c.name).split(regex);
@@ -264,7 +367,7 @@ export function RangeSumOverviewModal({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {filteredRows.map((row, i) => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className="p-2 border text-center font-bold sticky left-0 bg-gray-100 z-10">
                     {i + 1}
@@ -273,25 +376,44 @@ export function RangeSumOverviewModal({
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-purple-50', 'text-purple-900', 'border-purple-200')}
                   </td>
                   
-                  {sourceColumns.map((c: any) => {
+                  {visibleColumns.map((c: any) => {
+                    if (c.type === "image" || c.type === "file") {
+                      const imgUrl = getImageUrl(row[c.key]);
+                      return (
+                        <td key={c.key} className="p-2 border align-top text-center">
+                          {imgUrl ? (
+                            <img src={imgUrl} alt="" className="w-10 h-10 object-contain mx-auto" />
+                          ) : null}
+                        </td>
+                      );
+                    }
+                    if (c.type === "sale_tracker" || c.key === "total_qty") {
+                      return (
+                        <td key={c.key} className="p-0 border align-top">
+                          {renderMultiSourceCell(row[c.key])}
+                        </td>
+                      );
+                    }
+                    
+                    const rawVal = row[c.key];
+                    const strVal = formatCellDisplay(rawVal);
                     return (
-                      <td
-                        key={c.key}
-                        className="p-0 border align-top"
-                      >
-                        {renderMultiSourceCell(row[c.key])}
-                      </td>
+                       <td key={c.key} className="p-2 border align-top break-words">
+                         <div className="flex items-center gap-1 flex-wrap">
+                           {highlightText(strVal, deferredSearchQuery)}
+                         </div>
+                       </td>
                     );
                   })}
                 </tr>
               ))}
-              {rows.length === 0 && (
+              {filteredRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={sourceColumns.length + 2}
+                    colSpan={visibleColumns.length + 2}
                     className="p-8 text-center text-gray-500 font-medium"
                   >
-                    No items in this tracker.
+                    No items match your filters.
                   </td>
                 </tr>
               )}
