@@ -693,7 +693,7 @@ export function RangeSumOverviewModal({
                   const isSale = c.type === 'sale_tracker';
                   const isUncheckedSaleCol = isSale && !selectedKeys.has(c.key);
                   return (
-                  <th key={c.key} className={getHeaderCls(c.key, `p-2 border text-left ${!isSale ? 'bg-gray-100' : ''}`)} style={getHeaderSty(c.key, getColWidth(c.key))}>
+                  <th key={c.key} className={getHeaderCls(c.key, "p-2 border text-left bg-gray-100")} style={getHeaderSty(c.key, getColWidth(c.key))}>
                     <div className="flex items-start justify-between w-full"><div className="flex items-start gap-1 min-w-0">
                       {isSale && (
                       <span className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors cursor-pointer hover:bg-gray-300 mr-1 ${selectedKeys.has(c.key) ? 'bg-blue-100' : ''} ${c.key === anchorKey ? 'ring-2 ring-purple-500' : ''}`}>
