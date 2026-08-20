@@ -57,6 +57,7 @@ import { ExportChoiceModal } from "./components/ExportChoiceModal";
 import { DuplicateFinderModal } from "./components/DuplicateFinderModal";
 import { GlobalCombinationCopyBoxes } from "./components/GlobalCombinationCopyBoxes";
 import { GlobalCopyBoxesSettingsModal } from "./components/GlobalCopyBoxesSettingsModal";
+import { RangeSumOverviewModal } from "./components/RangeSumOverviewModal";
 import { TopHeaderBar } from "./components/TopHeaderBar";
 import { PageTabsBar } from "./components/PageTabsBar";
 import { SearchBarsSection } from "./components/SearchBarsSection";
@@ -446,17 +447,11 @@ function AppContent() {
   } | null>(null);
   const [isSalePromptOpen, setIsSalePromptOpen] = useState(false);
   const [isSumModalOpen, setIsSumModalOpen] = useState(false);
-  const [sumStartCol, setSumStartCol] = useState<string>("");
-  const [sumEndCol, setSumEndCol] = useState<string>("");
-  const [sumStartSearchQuery, setSumStartSearchQuery] = useState("");
-  const [sumEndSearchQuery, setSumEndSearchQuery] = useState("");
   const [activeCustomSum, setActiveCustomSum] = useState<{
     startName: string;
     endName: string;
     keys: string[];
-    selectedSources: string[];
   } | null>(null);
-  const [sumSelectedSources, setSumSelectedSources] = useState<string[]>([]);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isRetiredSourcesOverviewOpen, setRetiredSourcesOverviewOpen] = useState(false);
   const [retiredOverviewFilterSources, setRetiredOverviewFilterSources] = useState<string[] | null>(null);
@@ -1531,48 +1526,8 @@ function AppContent() {
     return cols;
   }, [activeConfig.columns, activeCustomSum]);
 
-  const uniqueSourcesInRange = useMemo(() => {
-    if (!isSumModalOpen || !activeConfig.isTrackerPage) return [];
-    const startIdx = activeConfig.columns.findIndex(
-      (c) => c.key === sumStartCol,
-    );
-    const endIdx = activeConfig.columns.findIndex((c) => c.key === sumEndCol);
-    if (startIdx === -1 || endIdx === -1) return [];
-
-    const minIdx = Math.min(startIdx, endIdx);
-    const maxIdx = Math.max(startIdx, endIdx);
-    const keys = activeConfig.columns
-      .slice(minIdx, maxIdx + 1)
-      .map((c) => c.key);
-
-    const allSources = new Set<string>();
-    activeRows.forEach((row) => {
-      // 1. Scan global sources from total_qty
-      const totalSources = parseMultiSource(row.total_qty);
-      const rowSourceNames = new Set<string>();
-      totalSources.forEach((s: any) => {
-        if (s.source) {
-          allSources.add(s.source);
-          rowSourceNames.add(s.source);
-        }
-      });
-
-      // 2. Scan specific range columns (Self-heal: only include if exists in total_qty)
-      keys.forEach((k) => {
-        const parsed = parseMultiSource(row[k]);
-        parsed.forEach((s: any) => {
-          if (s.source && rowSourceNames.has(s.source)) {
-            allSources.add(s.source);
-          }
-        });
-      });
-    });
-    return Array.from(allSources).sort((a, b) => a.localeCompare(b));
-  }, [isSumModalOpen, sumStartCol, sumEndCol, activeConfig.columns, activeRows]);
-
   const activeRowsWithSum = useMemo(() => {
     if (!activeCustomSum || !activeConfig.isTrackerPage) return activeRows;
-    const selected = activeCustomSum.selectedSources || [];
     return activeRows.map((r) => {
       let totalQty = 0;
       const breakdownMap: Record<string, number> = {};
@@ -1580,7 +1535,7 @@ function AppContent() {
       activeCustomSum.keys.forEach((k) => {
         const sources = parseMultiSource(r[k]);
         sources.forEach((s: any) => {
-          if (validSources.has(s.source) && (selected.length === 0 || selected.includes(s.source))) {
+          if (validSources.has(s.source)) {
             totalQty += parseFloat(String(s.qty)) || 0;
             breakdownMap[s.source] = (breakdownMap[s.source] || 0) + (parseFloat(String(s.qty)) || 0);
           }
@@ -2173,16 +2128,6 @@ function AppContent() {
           ) : (
             <button
               onClick={() => {
-                const saleCols = activeConfig.columns.filter(
-                  (c) => c.type === "sale_tracker",
-                );
-                if (saleCols.length > 0) {
-                  setSumStartCol(saleCols[0].key);
-                  setSumEndCol(saleCols[saleCols.length - 1].key);
-                }
-                setSumStartSearchQuery("");
-                setSumEndSearchQuery("");
-                setSumSelectedSources([]);
                 setIsSumModalOpen(true);
               }}
               className="bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded text-xs font-bold shadow-sm hover:bg-purple-200 flex items-center gap-1"
@@ -2977,261 +2922,21 @@ function AppContent() {
       />
 
       {/* --- CUSTOM SUM MODAL --- */}
-      {isSumModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[600px] max-w-[95vw] shadow-2xl">
-            <h3 className="text-lg font-bold mb-1 text-purple-800">
-              📊 Calculate Range Sum
-            </h3>
-            <p className="text-xs text-gray-500 mb-5">
-              Search and select the range. The total will appear next to
-              Remaining Qty.
-            </p>
-
-            <div className="flex flex-row gap-4 mb-6">
-              {/* Start Column Group */}
-              <div className="flex-1 p-3 bg-purple-50/50 rounded-lg border border-purple-100">
-                <label className="text-xs font-bold text-purple-700 block mb-2 uppercase tracking-wider">
-                  Step 1: Start Column
-                </label>
-                <input
-                  type="text"
-                  placeholder="🔍 Search start date..."
-                  className="w-full border border-gray-300 p-2 rounded text-sm mb-2 outline-none focus:border-purple-500 bg-white"
-                  value={sumStartSearchQuery}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSumStartSearchQuery(val);
-                    if (val.trim() !== "") {
-                      const matched = activeConfig.columns.find(
-                        (c) =>
-                          c.type === "sale_tracker" &&
-                          val
-                            .toLowerCase()
-                            .split(" ")
-                            .filter(Boolean)
-                            .every((term) =>
-                              c.name.toLowerCase().includes(term),
-                            ),
-                      );
-                      if (matched) setSumStartCol(matched.key);
-                    }
-                  }}
-                />
-                <div className="w-full border border-gray-300 rounded overflow-y-auto bg-white max-h-[130px] shadow-inner">
-                  {activeConfig.columns
-                    .filter(
-                      (c) =>
-                        c.type === "sale_tracker" &&
-                        (sumStartSearchQuery
-                          .toLowerCase()
-                          .split(" ")
-                          .filter(Boolean)
-                          .every((term) =>
-                            c.name.toLowerCase().includes(term),
-                          ) ||
-                          c.key === sumStartCol),
-                    )
-                    .map((c) => (
-                      <div
-                        key={c.key}
-                        onClick={() => setSumStartCol(c.key)}
-                        className={`p-2 text-sm cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors flex items-center ${sumStartCol === c.key ? "bg-purple-100 text-purple-900 font-bold border-l-4 border-purple-600" : "hover:bg-purple-50 text-gray-700 border-l-4 border-transparent"}`}
-                      >
-                        {renderHighlightedText(c.name, sumStartSearchQuery)}
-                      </div>
-                    ))}
-                  {activeConfig.columns.filter(
-                    (c) =>
-                      c.type === "sale_tracker" &&
-                      (sumStartSearchQuery
-                        .toLowerCase()
-                        .split(" ")
-                        .filter(Boolean)
-                        .every((term) => c.name.toLowerCase().includes(term)) ||
-                        c.key === sumStartCol),
-                  ).length === 0 && (
-                    <div className="p-3 text-sm text-gray-400 text-center italic font-semibold">
-                      No dates found
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* End Column Group */}
-              <div className="flex-1 p-3 bg-purple-50/50 rounded-lg border border-purple-100">
-                <label className="text-xs font-bold text-purple-700 block mb-2 uppercase tracking-wider">
-                  Step 2: End Column
-                </label>
-                <input
-                  type="text"
-                  placeholder="🔍 Search end date..."
-                  className="w-full border border-gray-300 p-2 rounded text-sm mb-2 outline-none focus:border-purple-500 bg-white"
-                  value={sumEndSearchQuery}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSumEndSearchQuery(val);
-                    if (val.trim() !== "") {
-                      const matched = [...activeConfig.columns].reverse().find(
-                        (c) =>
-                          c.type === "sale_tracker" &&
-                          val
-                            .toLowerCase()
-                            .split(" ")
-                            .filter(Boolean)
-                            .every((term) =>
-                              c.name.toLowerCase().includes(term),
-                            ),
-                      );
-                      if (matched) setSumEndCol(matched.key);
-                    }
-                  }}
-                />
-                <div className="w-full border border-gray-300 rounded overflow-y-auto bg-white max-h-[130px] shadow-inner">
-                  {activeConfig.columns
-                    .filter(
-                      (c) =>
-                        c.type === "sale_tracker" &&
-                        (sumEndSearchQuery
-                          .toLowerCase()
-                          .split(" ")
-                          .filter(Boolean)
-                          .every((term) =>
-                            c.name.toLowerCase().includes(term),
-                          ) ||
-                          c.key === sumEndCol),
-                    )
-                    .map((c) => (
-                      <div
-                        key={c.key}
-                        onClick={() => setSumEndCol(c.key)}
-                        className={`p-2 text-sm cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors flex items-center ${sumEndCol === c.key ? "bg-purple-100 text-purple-900 font-bold border-l-4 border-purple-600" : "hover:bg-purple-50 text-gray-700 border-l-4 border-transparent"}`}
-                      >
-                        {renderHighlightedText(c.name, sumEndSearchQuery)}
-                      </div>
-                    ))}
-                  {activeConfig.columns.filter(
-                    (c) =>
-                      c.type === "sale_tracker" &&
-                      (sumEndSearchQuery
-                        .toLowerCase()
-                        .split(" ")
-                        .filter(Boolean)
-                        .every((term) => c.name.toLowerCase().includes(term)) ||
-                        c.key === sumEndCol),
-                  ).length === 0 && (
-                    <div className="p-3 text-sm text-gray-400 text-center italic font-semibold">
-                      No dates found
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Filter by Source */}
-            <div className="mb-6 p-4 bg-purple-50/50 rounded-lg border border-purple-100">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-bold text-purple-700 uppercase tracking-wider">
-                  Step 3: Filter by Source (Optional)
-                </label>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setSumSelectedSources(uniqueSourcesInRange)}
-                    className="text-[10px] font-extrabold text-purple-600 hover:text-purple-800 uppercase tracking-tight"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    onClick={() => setSumSelectedSources([])}
-                    className="text-[10px] font-extrabold text-red-600 hover:text-red-800 uppercase tracking-tight"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 p-3 bg-white rounded-md border border-purple-100 min-h-[50px]">
-                {uniqueSourcesInRange.length > 0 ? (
-                  uniqueSourcesInRange.map((source) => {
-                    const isSelected = sumSelectedSources.includes(source);
-                    return (
-                      <button
-                        key={source}
-                        onClick={() => {
-                          setSumSelectedSources((prev) =>
-                            prev.includes(source)
-                              ? prev.filter((s) => s !== source)
-                              : [...prev, source],
-                          );
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                          isSelected
-                            ? "bg-purple-600 text-white border-purple-700 shadow-md transform scale-105"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:bg-purple-50"
-                        }`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${isSelected ? "bg-white" : "bg-purple-300"}`} />
-                        {source}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[11px] text-gray-400 italic font-medium">
-                    Select a range above to populate source filters
-                  </div>
-                )}
-              </div>
-              <p className="text-[10px] text-gray-400 mt-2 italic">
-                * If no sources are selected, the entire range total will be calculated.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsSumModalOpen(false)}
-                className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-bold text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const saleCols = activeConfig.columns.filter(
-                    (c) => c.type === "sale_tracker",
-                  );
-                  const idx1 = saleCols.findIndex((c) => c.key === sumStartCol);
-                  const idx2 = saleCols.findIndex((c) => c.key === sumEndCol);
-
-                  if (idx1 === -1 || idx2 === -1) {
-                    toast("Invalid columns selected");
-                    return;
-                  }
-
-                  const startIdx = Math.min(idx1, idx2);
-                  const endIdx = Math.max(idx1, idx2);
-
-                  const keysToSum = saleCols
-                    .slice(startIdx, endIdx + 1)
-                    .map((c) => c.key);
-
-                  setActiveCustomSum({
-                    startName: saleCols[startIdx].name,
-                    endName: saleCols[endIdx].name,
-                    keys: keysToSum,
-                    selectedSources: sumSelectedSources,
-                  });
-
-                  setIsSumModalOpen(false);
-                  toast(
-                    `Calculated sum for ${keysToSum.length} columns.`,
-                  );
-                }}
-                className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-sm shadow-md transition-colors"
-              >
-                Calculate Sum
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <RangeSumOverviewModal
+        isOpen={isSumModalOpen}
+        onClose={() => setIsSumModalOpen(false)}
+        columns={activeConfig.columns}
+        rows={activeRows}
+        onApply={(startName, endName, keys) => {
+          setActiveCustomSum({
+            startName,
+            endName,
+            keys
+          });
+          setIsSumModalOpen(false);
+          toast(`Calculated sum for ${keys.length} columns.`);
+        }}
+      />
 
       <ExportChoiceModal
         isOpen={modals.exportChoice}
