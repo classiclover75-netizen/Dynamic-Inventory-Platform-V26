@@ -36,10 +36,6 @@ const SHADOW_CLASSES = {
     first: 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]',
     last: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]',
     middle: 'shadow-[inset_-1px_-1px_0_#000]'
-  },
-  blue: {
-    withDropShadow: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8,inset_1px_1px_0_#1d4ed8]',
-    plain: 'shadow-[inset_-1px_-1px_0_#1d4ed8,inset_1px_1px_0_#1d4ed8]'
   }
 };
 
@@ -234,19 +230,15 @@ export function RangeSumOverviewModal({
     const isFirst = colId === pinnedCols[0];
     let shadowCls = '';
     if (isPinned) {
-      if (colId === '__range_sum') {
-        shadowCls = isLast ? SHADOW_CLASSES.blue.withDropShadow : SHADOW_CLASSES.blue.plain;
+      const theme = SHADOW_CLASSES.black;
+      if (isFirst && isLast) {
+        shadowCls = theme.firstAndLast;
+      } else if (isFirst) {
+        shadowCls = theme.first;
+      } else if (isLast) {
+        shadowCls = theme.last;
       } else {
-        const theme = SHADOW_CLASSES.black;
-        if (isFirst && isLast) {
-          shadowCls = theme.firstAndLast;
-        } else if (isFirst) {
-          shadowCls = theme.first;
-        } else if (isLast) {
-          shadowCls = theme.last;
-        } else {
-          shadowCls = theme.middle;
-        }
+        shadowCls = theme.middle;
       }
     }
     return `${baseCls} sticky top-0 ${isPinned ? 'z-30' : 'z-20'} ${shadowCls}`;
@@ -269,19 +261,15 @@ export function RangeSumOverviewModal({
     const needsBg = isPinned && !baseCls.includes('bg-');
     let shadowCls = '';
     if (isPinned) {
-      if (colId === '__range_sum') {
-        shadowCls = isLast ? SHADOW_CLASSES.blue.withDropShadow : SHADOW_CLASSES.blue.plain;
+      const theme = SHADOW_CLASSES.black;
+      if (isFirst && isLast) {
+        shadowCls = theme.firstAndLast;
+      } else if (isFirst) {
+        shadowCls = theme.first;
+      } else if (isLast) {
+        shadowCls = theme.last;
       } else {
-        const theme = SHADOW_CLASSES.black;
-        if (isFirst && isLast) {
-          shadowCls = theme.firstAndLast;
-        } else if (isFirst) {
-          shadowCls = theme.first;
-        } else if (isLast) {
-          shadowCls = theme.last;
-        } else {
-          shadowCls = theme.middle;
-        }
+        shadowCls = theme.middle;
       }
     }
     return `${baseCls} ${isPinned ? 'sticky z-[15]' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls}`;
