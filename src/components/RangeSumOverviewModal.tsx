@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search } from 'lucide-react';
+import { Search, FileSpreadsheet } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { useToast } from './ToastProvider';
 import { Modal, Button, Input } from './ui';
 import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
 import { useSaleColumnSearch } from '../hooks/useSaleColumnSearch';
@@ -15,7 +18,7 @@ interface RangeSumOverviewModalProps {
   onClose: () => void;
   columns: Column[];
   rows: RowData[];
-  onApply: (startName: string, endName: string, keys: string[]) => void;
+  onApply: (startName: string, endName: string, keys: string[], selectedSources?: string[]) => void;
   initialColWidths?: Record<string, number>;
   onSaveColWidths?: (widths: Record<string, number>) => void;
   initialPinnedCols?: string[];
@@ -33,10 +36,47 @@ export function RangeSumOverviewModal({
   initialPinnedCols,
   onSavePinnedCols
 }: RangeSumOverviewModalProps) {
+  const toast = useToast();
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
   const [showSaleColumns, setShowSaleColumns] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
+  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
+  const [sourceSearchQuery, setSourceSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const sourceDropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (!showSourceDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (sourceDropdownRef.current && !sourceDropdownRef.current.contains(e.target as Node)) {
+        setShowSourceDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSourceDropdown]);
+  
+  const allUniqueSourcesInfo = useMemo(() => {
+    const map = new Map<string, string>();
+    rows.forEach(r => {
+      const parsed = parseMultiSource(r.total_qty);
+      parsed.forEach((s: any) => {
+        if (!map.has(s.source) || !map.get(s.source)) {
+           map.set(s.source, s.color || '');
+        }
+      });
+    });
+    return Array.from(map.entries()).map(([source, color]) => ({ source, color })).sort((a, b) => a.source.localeCompare(b.source));
+  }, [rows]);
+  
+  const filteredSources = useMemo(() => {
+    if (!sourceSearchQuery) return allUniqueSourcesInfo;
+    const lower = sourceSearchQuery.toLowerCase();
+    return allUniqueSourcesInfo.filter(s => s.source.toLowerCase().includes(lower));
+  }, [allUniqueSourcesInfo, sourceSearchQuery]);
+
 
   const { selectedKeys, toggle, selectRange, clear, selectAll, anchorKey } = useSaleColumnRangeSelect();
   const orderedSaleColKeys = useMemo(() => saleCols.map(c => c.key), [saleCols]);
@@ -53,8 +93,11 @@ export function RangeSumOverviewModal({
       selectAll(orderedSaleColKeys);
       setShowSaleColumns(true);
       setSearchQuery("");
+      setSelectedSources(new Set(allUniqueSourcesInfo.map(s => s.source)));
+      setShowSourceDropdown(false);
+      setSourceSearchQuery("");
     }
-  }, [isOpen, selectAll, orderedSaleColKeys]);
+  }, [isOpen, selectAll, orderedSaleColKeys, allUniqueSourcesInfo]);
 
   useEffect(() => {
     if (isOpen) {
@@ -309,7 +352,8 @@ export function RangeSumOverviewModal({
     selectedKeys.forEach(key => {
       if (saleTrackerColsVisible.some(c => c.key === key)) {
         const sources = parseMultiSource(row[key]);
-        sources.forEach(s => {
+        sources.forEach((s: any) => {
+          if (!selectedSources.has(s.source)) return;
           const qty = parseFloat(s.qty);
           if (!isNaN(qty)) {
             hasValues = true;
@@ -333,13 +377,87 @@ export function RangeSumOverviewModal({
   const handleApply = () => {
     const validSelectedCols = saleTrackerColsVisible.filter(c => selectedKeys.has(c.key));
     if (validSelectedCols.length === 0) {
-      onApply("None", "None", []);
+      onApply("None", "None", [], Array.from(selectedSources));
       return;
     }
     const startName = validSelectedCols[0].name;
     const endName = validSelectedCols[validSelectedCols.length - 1].name;
     const keys = validSelectedCols.map(c => c.key);
-    onApply(startName, endName, keys);
+    onApply(startName, endName, keys, Array.from(selectedSources));
+  };
+  
+  const handleExport = async () => {
+    if (filteredRows.length === 0) {
+      toast("No rows to export.");
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Range Sum');
+      
+      const exportCols = [
+        { name: "Row", width: 10 },
+        { name: "Total Sale Range Column Sum", width: 25 },
+        ...visibleColumns.map(c => ({
+          name: c.name,
+          width: c.type === 'image' || c.type === 'file' ? 12 : 20
+        }))
+      ];
+      
+      worksheet.columns = exportCols.map(c => ({
+        header: c.name,
+        key: c.name,
+        width: c.width
+      }));
+      
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+      
+      for (let i = 0; i < filteredRows.length; i++) {
+        const row = filteredRows[i];
+        const rowValues: any = {};
+        rowValues["Row"] = i + 1;
+        
+        const sumBreakdown = getRowSumBreakdown(row);
+        let sumTotal = 0;
+        sumBreakdown.forEach(b => sumTotal += parseFloat(b.qty) || 0);
+        rowValues["Total Sale Range Column Sum"] = sumTotal;
+        
+        for (const c of visibleColumns) {
+           if (c.type === 'image' || c.type === 'file') {
+              const val = row[c.key];
+              rowValues[c.name] = val ? (c.type === 'image' ? 'Image' : 'File') : '';
+           } else if (c.type === 'sale_tracker' || c.key === "total_qty") {
+              const sources = parseMultiSource(row[c.key]);
+              if (sources.length === 0) {
+                 rowValues[c.name] = "";
+              } else {
+                 let total = 0;
+                 const parts = sources.map((s: any) => {
+                    const q = parseFloat(s.qty) || 0;
+                    total += q;
+                    return `${s.source}: ${s.qty}`;
+                 });
+                 rowValues[c.name] = `${parts.join(', ')} (Total: ${total})`;
+              }
+           } else {
+              rowValues[c.name] = formatCellDisplay(row[c.key]);
+           }
+        }
+        worksheet.addRow(rowValues);
+      }
+      
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Range_Sum_Overview.xlsx`);
+      toast("Exported to Excel successfully.");
+    } catch (err: any) {
+      console.error(err);
+      toast("Export failed: " + err.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -390,6 +508,83 @@ export function RangeSumOverviewModal({
              )}
            </div>
            <div className="flex items-center gap-2 shrink-0">
+             <div className="relative" ref={sourceDropdownRef}>
+               <Button
+                 variant="outline"
+                 onClick={() => setShowSourceDropdown(!showSourceDropdown)}
+                 className="flex items-center gap-2 font-bold"
+               >
+                 📋 Select Sources ({selectedSources.size} selected)
+               </Button>
+               {showSourceDropdown && (
+                 <div className="absolute top-full left-0 mt-2 w-[400px] bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-3 flex flex-col gap-3 max-h-[400px]">
+                   <div className="relative shrink-0">
+                     <Search className="absolute left-2 top-2.5 text-gray-400" size={16} />
+                     <Input
+                       className="pl-8"
+                       placeholder="Search sources..."
+                       value={sourceSearchQuery}
+                       onChange={(e) => setSourceSearchQuery(e.target.value)}
+                     />
+                   </div>
+                   <div className="flex gap-2 shrink-0">
+                     <button
+                       onClick={() => setSelectedSources(new Set(allUniqueSourcesInfo.map(s => s.source)))}
+                       className="px-2 py-1 text-[10px] font-bold bg-[#2b579a] text-white rounded hover:bg-[#1a3c6d] transition-colors"
+                     >
+                       Select All
+                     </button>
+                     <button
+                       onClick={() => setSelectedSources(new Set())}
+                       className="px-2 py-1 text-[10px] font-bold bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors border border-gray-300"
+                     >
+                       Select None
+                     </button>
+                   </div>
+                   <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-2">
+                      {filteredSources.map(s => (
+                         <label
+                           key={s.source}
+                           className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:bg-gray-50 p-1.5 rounded transition-colors"
+                         >
+                           <input
+                             type="checkbox"
+                             className="accent-purple-600 w-4 h-4 cursor-pointer shrink-0"
+                             checked={selectedSources.has(s.source)}
+                             onChange={(e) => {
+                                const next = new Set(selectedSources);
+                                if (e.target.checked) next.add(s.source);
+                                else next.delete(s.source);
+                                setSelectedSources(next);
+                             }}
+                           />
+                           {(() => {
+                             const render = s.color ? resolveChipRender(s.color) : null;
+                             return (
+                               <span 
+                                 className={`px-2 py-0.5 rounded text-xs font-bold shadow-sm border ${render?.kind === 'class' ? render.className : "bg-gray-100 text-gray-800 border-gray-200"}`}
+                                 style={render?.kind === 'style' ? render.style : undefined}
+                               >
+                                 {s.source}
+                               </span>
+                             );
+                           })()}
+                         </label>
+                      ))}
+                   </div>
+                 </div>
+               )}
+             </div>
+             
+             <Button 
+                variant="green" 
+                onClick={handleExport} 
+                disabled={isExporting || filteredRows.length === 0}
+                className="flex items-center gap-2 shrink-0"
+             >
+                <FileSpreadsheet size={16} /> {isExporting ? "Exporting..." : "Export to Excel"}
+             </Button>
+
              <Button variant="blue" onClick={handleApply}>
                Apply to Page
              </Button>

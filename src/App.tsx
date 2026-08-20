@@ -451,6 +451,7 @@ function AppContent() {
     startName: string;
     endName: string;
     keys: string[];
+    selectedSources?: string[];
   } | null>(null);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isRetiredSourcesOverviewOpen, setRetiredSourcesOverviewOpen] = useState(false);
@@ -1533,6 +1534,15 @@ function AppContent() {
       let totalQty = 0;
       const breakdownMap: Record<string, number> = {};
       const validSources = new Set(parseMultiSource(r.total_qty).map((s: any) => s.source));
+      if (activeCustomSum.selectedSources && activeCustomSum.selectedSources.length > 0) {
+        const selectedSet = new Set(activeCustomSum.selectedSources);
+        const newValidSources = new Set<string>();
+        validSources.forEach(s => {
+          if (selectedSet.has(s)) newValidSources.add(s);
+        });
+        validSources.clear();
+        newValidSources.forEach(s => validSources.add(s));
+      }
       activeCustomSum.keys.forEach((k) => {
         const sources = parseMultiSource(r[k]);
         sources.forEach((s: any) => {
@@ -2928,11 +2938,12 @@ function AppContent() {
         onClose={() => setIsSumModalOpen(false)}
         columns={activeConfig.columns}
         rows={activeRows}
-        onApply={(startName, endName, keys) => {
+        onApply={(startName, endName, keys, selectedSources) => {
           setActiveCustomSum({
             startName,
             endName,
-            keys
+            keys,
+            selectedSources
           });
           setIsSumModalOpen(false);
           toast(`Calculated sum for ${keys.length} columns.`);
