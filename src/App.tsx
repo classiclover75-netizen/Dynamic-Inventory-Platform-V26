@@ -2939,6 +2939,10 @@ function AppContent() {
         columns={activeConfig.columns}
         rows={activeRows}
         minStockAlert={activeConfig.minStockAlert}
+        onImageClick={(rowId, imageKey) => {
+          setPreviewContext({ rowId, imageKey, pageName: state.activePage, disableActions: true });
+          toggleModal("imagePreview", true);
+        }}
         onApply={(startName, endName, keys, selectedSources) => {
           setActiveCustomSum({
             startName,

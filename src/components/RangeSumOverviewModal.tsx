@@ -26,6 +26,7 @@ interface RangeSumOverviewModalProps {
   initialPinnedCols?: string[];
   onSavePinnedCols?: (cols: string[]) => void;
   minStockAlert?: number;
+  onImageClick?: (rowId: string, imageKey: string) => void;
 }
 
 export function RangeSumOverviewModal({
@@ -38,7 +39,8 @@ export function RangeSumOverviewModal({
   onSaveColWidths,
   initialPinnedCols,
   onSavePinnedCols,
-  minStockAlert = 0
+  minStockAlert = 0,
+  onImageClick
 }: RangeSumOverviewModalProps) {
   const { toast } = useToast();
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
@@ -325,7 +327,7 @@ export function RangeSumOverviewModal({
     );
   };
 
-  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200', isTotalQty = false, forceTotalRow = false) => {
+  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200', isTotalQty = false) => {
     const breakdown = parseMultiSource(rawVal);
     if (breakdown.length === 0) return null;
     let total = 0;
@@ -725,7 +727,7 @@ export function RangeSumOverviewModal({
                       return (
                         <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key)}>
                           {imgUrl ? (
-                            <img src={imgUrl} alt="" className="w-10 h-10 object-contain mx-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            <img src={imgUrl} alt="" className={`w-10 h-10 object-contain mx-auto ${onImageClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`} onClick={() => onImageClick?.(row.id, c.key)} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           ) : null}
                         </td>
                       );
@@ -751,7 +753,7 @@ export function RangeSumOverviewModal({
                       
                       return (
                         <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
-                          {renderMultiSourceCell(JSON.stringify(remainingSources), 'bg-white', 'text-gray-900', 'border-gray-200', false, totalSources.length >= 2)}
+                          {renderMultiSourceCell(JSON.stringify(remainingSources), 'bg-white', 'text-gray-900', 'border-gray-200', false)}
                         </td>
                       );
                     }
