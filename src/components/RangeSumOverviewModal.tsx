@@ -281,9 +281,18 @@ export function RangeSumOverviewModal({
   const filteredRows = useMemo(() => {
     if (!deferredSearchQuery) return rows;
     const tokens = deferredSearchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    const saleCols = columns.filter((col) => col.type === "sale_tracker");
     return rows.filter(row => {
       return tokens.every(token => {
         return visibleColumns.some(c => {
+          if (c.key === 'remaining_qty') {
+            const remainingSources = computeRemainingQtyBreakdown(row, saleCols, minStockAlert);
+            if (remainingSources.length === 0) return false;
+            return remainingSources.some((s: any) => 
+              String(s.source).toLowerCase().includes(token) || 
+              String(s.qty).toLowerCase().includes(token)
+            );
+          }
           if (c.type === 'sale_tracker' || c.key === 'total_qty') {
             const sources = parseMultiSource(row[c.key]);
             if (sources.length === 0) return false;
@@ -298,7 +307,7 @@ export function RangeSumOverviewModal({
         });
       });
     });
-  }, [rows, deferredSearchQuery, visibleColumns]);
+  }, [rows, deferredSearchQuery, visibleColumns, columns, minStockAlert]);
 
   const getImageUrl = (val: any) => {
     if (!val) return "";
