@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { Modal, Button, Input } from './ui';
 import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
@@ -43,14 +43,24 @@ export function RangeSumOverviewModal({
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(initialColWidths || {});
 
+  const initialColWidthsRef = useRef(initialColWidths);
+  useEffect(() => {
+    initialColWidthsRef.current = initialColWidths;
+  }, [initialColWidths]);
+
   useEffect(() => {
     if (isOpen) {
       selectAll(orderedSaleColKeys);
       setShowSaleColumns(true);
       setSearchQuery("");
-      setColWidths(initialColWidths || {});
     }
-  }, [isOpen, selectAll, orderedSaleColKeys, initialColWidths]);
+  }, [isOpen, selectAll, orderedSaleColKeys]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setColWidths(initialColWidthsRef.current || {});
+    }
+  }, [isOpen]);
 
   const {
     searchText: saleSearchText,
@@ -174,10 +184,11 @@ export function RangeSumOverviewModal({
   const getBodyCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLast = colId === lastPinnedColId;
-    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const needsBg = isPinned && !baseCls.includes('bg-');
+    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${needsBg ? 'bg-white' : ''} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
   };
 
-  const getBodySty = (colId: string, width: number) => {
+  const getBodySty = (colId: string) => {
     const isPinned = pinnedCols.includes(colId);
     return {
       ...(isPinned ? { left: pinnedOffsets[colId] } : {})
@@ -486,10 +497,10 @@ export function RangeSumOverviewModal({
             <tbody>
               {filteredRows.map((row, i) => (
                 <tr key={row.id} className="hover:bg-gray-50">
-                  <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row', getColWidth('__row'))}>
+                  <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {i + 1}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 border bg-white align-top")} style={getBodySty('__range_sum', getColWidth('__range_sum'))}>
+                  <td className={getBodyCls('__range_sum', "p-0 border bg-white align-top")} style={getBodySty('__range_sum')}>
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-purple-50', 'text-purple-900', 'border-purple-200')}
                   </td>
                   
@@ -497,7 +508,7 @@ export function RangeSumOverviewModal({
                     if (c.type === "image" || c.type === "file") {
                       const imgUrl = getImageUrl(row[c.key]);
                       return (
-                        <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key, getColWidth(c.key))}>
+                        <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key)}>
                           {imgUrl ? (
                             <img src={imgUrl} alt="" className="w-10 h-10 object-contain mx-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           ) : null}
@@ -506,7 +517,7 @@ export function RangeSumOverviewModal({
                     }
                     if (c.type === "sale_tracker" || c.key === "total_qty") {
                       return (
-                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key, getColWidth(c.key))}>
+                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
                           {renderMultiSourceCell(row[c.key])}
                         </td>
                       );
@@ -515,7 +526,7 @@ export function RangeSumOverviewModal({
                     const rawVal = row[c.key];
                     const strVal = formatCellDisplay(rawVal);
                     return (
-                       <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top break-words")} style={getBodySty(c.key, getColWidth(c.key))}>
+                       <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top break-words")} style={getBodySty(c.key)}>
                          <div className="flex items-center gap-1 flex-wrap">
                            {highlightText(strVal, deferredSearchQuery)}
                          </div>

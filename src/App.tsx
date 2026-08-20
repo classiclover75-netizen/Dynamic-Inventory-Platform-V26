@@ -706,7 +706,8 @@ function AppContent() {
   const activeConfig = { ...rawActiveConfig, columns: rawActiveConfig.columns || [] };
   const activeRows = state.pageRows[state.activePage] || [];
 
-
+  const rangeSumInitialColWidths = useMemo(() => activeConfig?.rangeSumColWidths || {}, [activeConfig?.rangeSumColWidths]);
+  const rangeSumInitialPinnedCols = useMemo(() => activeConfig?.rangeSumPinnedCols, [activeConfig?.rangeSumPinnedCols]);
 
   const handleToggleColumnArchive = async (
     colKey: string,
@@ -2936,9 +2937,9 @@ function AppContent() {
           setIsSumModalOpen(false);
           toast(`Calculated sum for ${keys.length} columns.`);
         }}
-        initialColWidths={activeConfig?.rangeSumColWidths || {}}
+        initialColWidths={rangeSumInitialColWidths}
         onSaveColWidths={(widths) => handleSaveActivePageSettings({ ...activeConfig, rangeSumColWidths: widths } as any, false)}
-        initialPinnedCols={activeConfig?.rangeSumPinnedCols}
+        initialPinnedCols={rangeSumInitialPinnedCols}
         onSavePinnedCols={(cols) => handleSaveActivePageSettings({ ...activeConfig, rangeSumPinnedCols: cols } as any, false)}
       />
 
