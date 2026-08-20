@@ -38,10 +38,8 @@ const SHADOW_CLASSES = {
     middle: 'shadow-[inset_-1px_-1px_0_#000]'
   },
   blue: {
-    firstAndLast: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8,inset_1px_0_0_#1d4ed8]',
-    first: 'shadow-[inset_-1px_-1px_0_#1d4ed8,inset_1px_0_0_#1d4ed8]',
-    last: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8]',
-    middle: 'shadow-[inset_-1px_-1px_0_#1d4ed8]'
+    withDropShadow: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8,inset_1px_1px_0_#1d4ed8]',
+    plain: 'shadow-[inset_-1px_-1px_0_#1d4ed8,inset_1px_1px_0_#1d4ed8]'
   }
 };
 
@@ -236,15 +234,19 @@ export function RangeSumOverviewModal({
     const isFirst = colId === pinnedCols[0];
     let shadowCls = '';
     if (isPinned) {
-      const theme = colId === '__range_sum' ? SHADOW_CLASSES.blue : SHADOW_CLASSES.black;
-      if (isFirst && isLast) {
-        shadowCls = theme.firstAndLast;
-      } else if (isFirst) {
-        shadowCls = theme.first;
-      } else if (isLast) {
-        shadowCls = theme.last;
+      if (colId === '__range_sum') {
+        shadowCls = isLast ? SHADOW_CLASSES.blue.withDropShadow : SHADOW_CLASSES.blue.plain;
       } else {
-        shadowCls = theme.middle;
+        const theme = SHADOW_CLASSES.black;
+        if (isFirst && isLast) {
+          shadowCls = theme.firstAndLast;
+        } else if (isFirst) {
+          shadowCls = theme.first;
+        } else if (isLast) {
+          shadowCls = theme.last;
+        } else {
+          shadowCls = theme.middle;
+        }
       }
     }
     return `${baseCls} sticky top-0 ${isPinned ? 'z-30' : 'z-20'} ${shadowCls}`;
@@ -267,15 +269,19 @@ export function RangeSumOverviewModal({
     const needsBg = isPinned && !baseCls.includes('bg-');
     let shadowCls = '';
     if (isPinned) {
-      const theme = colId === '__range_sum' ? SHADOW_CLASSES.blue : SHADOW_CLASSES.black;
-      if (isFirst && isLast) {
-        shadowCls = theme.firstAndLast;
-      } else if (isFirst) {
-        shadowCls = theme.first;
-      } else if (isLast) {
-        shadowCls = theme.last;
+      if (colId === '__range_sum') {
+        shadowCls = isLast ? SHADOW_CLASSES.blue.withDropShadow : SHADOW_CLASSES.blue.plain;
       } else {
-        shadowCls = theme.middle;
+        const theme = SHADOW_CLASSES.black;
+        if (isFirst && isLast) {
+          shadowCls = theme.firstAndLast;
+        } else if (isFirst) {
+          shadowCls = theme.first;
+        } else if (isLast) {
+          shadowCls = theme.last;
+        } else {
+          shadowCls = theme.middle;
+        }
       }
     }
     return `${baseCls} ${isPinned ? 'sticky z-[15]' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls}`;
@@ -797,8 +803,8 @@ export function RangeSumOverviewModal({
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {rowNumbers.get(row.id) || (i + 1)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 border bg-blue-50/30 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
-                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-blue-50/30', 'text-blue-700', 'border-blue-200', true, true)}
+                  <td className={getBodyCls('__range_sum', "p-0 border bg-blue-50 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
+                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-transparent', 'text-blue-700', 'border-blue-200', true, true)}
                   </td>
                   
                   {visibleColumns.map((c: any) => {
