@@ -468,7 +468,7 @@ export function ActiveSourcesOverviewModal({
       else if (colId === '__total_sales' || colId === '__range_sum') pinnedBg = '!bg-blue-100';
       else pinnedBg = '!bg-gray-200';
     }
-    return `${baseClass} overflow-hidden ${isPinned ? 'sticky z-20 ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    return `${baseClass} overflow-hidden sticky top-0 ${isPinned ? 'z-30 ' + pinnedBg : 'z-20'} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
   };
   const getHeaderSty = (colId: string, width: number) => {
     const isPinned = pinnedCols.includes(colId);
@@ -484,7 +484,7 @@ export function ActiveSourcesOverviewModal({
       else if (colId === '__total_sales' || colId === '__range_sum') pinnedBg = '!bg-blue-100';
       else pinnedBg = '!bg-gray-100';
     }
-    return `${baseClass} ${isPinned ? 'sticky z-10 ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    return `${baseClass} ${isPinned ? 'sticky z-[15] ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
   };
   const getBodySty = (colId: string, width: number) => {
     const isPinned = pinnedCols.includes(colId);
@@ -698,7 +698,7 @@ export function ActiveSourcesOverviewModal({
         </div>
         <div className="flex-1 overflow-auto border rounded relative bg-white pr-4">
           <table className="w-max table-fixed text-sm border-collapse" style={{ width: totalWidth + 'px' }}>
-            <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+            <thead className="bg-gray-100 shadow-sm">
               <tr>
                 <th className={getHeaderCls('__active_source', "p-2 border text-left bg-purple-50 text-purple-800 relative")} style={getHeaderSty('__active_source', getColWidth('__active_source'))}>
                   <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">📦 {showAllStatuses ? "Active/Retired Sources" : "Active Source"}</div>{renderPinBtn('__active_source')}</div>
@@ -715,7 +715,7 @@ export function ActiveSourcesOverviewModal({
                 {sourceColumns.map((c, i) => {
                   const isUncheckedSaleCol = c.type === 'sale_tracker' && !selectedKeys.has(c.key);
                   return (
-                  <th key={c.key} className={getHeaderCls(c.key, "p-2 border text-left relative")} style={getHeaderSty(c.key, getColWidth(c.key))}>
+                  <th key={c.key} className={getHeaderCls(c.key, "p-2 border text-left bg-gray-100 relative")} style={getHeaderSty(c.key, getColWidth(c.key))}>
                     <div className="flex items-start justify-between w-full"><div className="flex items-start gap-1 min-w-0">
                       {c.type === 'sale_tracker' && (
                         <span className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors cursor-pointer hover:bg-gray-300 mr-1 ${selectedKeys.has(c.key) ? 'bg-blue-100' : ''} ${c.key === anchorKey ? 'ring-2 ring-purple-500' : ''}`}>
