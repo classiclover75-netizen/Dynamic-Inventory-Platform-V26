@@ -249,16 +249,17 @@ export function RangeSumOverviewModal({
     const isLast = colId === lastPinnedColId;
     const isFirst = colId === pinnedCols[0];
     const needsBg = isPinned && !baseCls.includes('bg-');
+    const bColor = colId === '__range_sum' ? '#bfdbfe' : '#000'; // blue-200 for __range_sum
     let shadowCls = '';
     if (isPinned) {
       if (isFirst && isLast) {
-        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+        shadowCls = `shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_${bColor},inset_1px_0_0_${bColor}]`;
       } else if (isFirst) {
-        shadowCls = 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+        shadowCls = `shadow-[inset_-1px_-1px_0_${bColor},inset_1px_0_0_${bColor}]`;
       } else if (isLast) {
-        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]';
+        shadowCls = `shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_${bColor}]`;
       } else {
-        shadowCls = 'shadow-[inset_-1px_-1px_0_#000]';
+        shadowCls = `shadow-[inset_-1px_-1px_0_${bColor}]`;
       }
     }
     return `${baseCls} ${isPinned ? 'sticky z-[15]' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls}`;
@@ -369,7 +370,7 @@ export function RangeSumOverviewModal({
     );
   };
 
-  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200', isTotalQty = false) => {
+  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200', isTotalQty = false, removeBorders = false) => {
     const breakdown = parseMultiSource(rawVal);
     if (breakdown.length === 0) return null;
     let total = 0;
@@ -378,7 +379,7 @@ export function RangeSumOverviewModal({
     });
 
     return (
-      <div className={`p-1.5 border-r border-b ${borderClass} overflow-hidden whitespace-pre-wrap ${bgClass} ${textClass} font-bold text-center h-full min-h-[40px] flex items-center`}>
+      <div className={`p-1.5 ${removeBorders ? '' : 'border-r border-b'} ${borderClass} overflow-hidden whitespace-pre-wrap ${bgClass} ${textClass} font-bold text-center h-full min-h-[40px] flex items-center`}>
         <div className="flex flex-col gap-1 justify-center w-full">
           {breakdown.map((b: any, idx: number) => {
             const locked = isLocked(b);
@@ -412,6 +413,7 @@ export function RangeSumOverviewModal({
   const getRowSumBreakdown = (row: RowData) => {
     const breakdownMap: Record<string, { qty: number, color: string }> = {};
     let hasValues = false;
+    const allTotalSources = parseMultiSource(row.total_qty || "");
 
     selectedKeys.forEach(key => {
       if (saleTrackerColsVisible.some(c => c.key === key)) {
@@ -431,11 +433,15 @@ export function RangeSumOverviewModal({
     });
 
     if (!hasValues) return [];
-    return Object.entries(breakdownMap).map(([source, data]) => ({
-      source,
-      qty: String(data.qty),
-      color: data.color
-    }));
+    return Object.entries(breakdownMap).map(([source, data]) => {
+      const matchInTotal = allTotalSources.find((ts: any) => ts.source === source);
+      return {
+        source,
+        qty: String(data.qty),
+        color: data.color,
+        retired: matchInTotal ? isRetired(matchInTotal) : false
+      };
+    });
   };
 
   const handleApply = () => {
@@ -569,7 +575,8 @@ export function RangeSumOverviewModal({
                    <Search className="absolute left-2 top-2.5 text-gray-400" size={16} />
                    <input
                      type="text"
-                     className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-blue-500 w-64"
+                     className="pl-8 pr-3 py-1.5 border-2 rounded-md text-sm outline-none w-64 transition-colors"
+                     style={{ borderColor: '#2b579a' }}
                      placeholder="Search Sale Column"
                      value={saleSearchText}
                      onChange={e => setSaleSearchText(e.target.value)}
@@ -774,8 +781,8 @@ export function RangeSumOverviewModal({
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {rowNumbers.get(row.id) || (i + 1)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 border bg-white align-top")} style={getBodySty('__range_sum')}>
-                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-purple-50', 'text-purple-900', 'border-purple-200')}
+                  <td className={getBodyCls('__range_sum', "p-0 bg-blue-50/30 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
+                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-blue-50/30', 'text-blue-700', 'border-blue-200', true, true)}
                   </td>
                   
                   {visibleColumns.map((c: any) => {
