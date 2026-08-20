@@ -36,7 +36,7 @@ export function RangeSumOverviewModal({
   initialPinnedCols,
   onSavePinnedCols
 }: RangeSumOverviewModalProps) {
-  const toast = useToast();
+  const { toast } = useToast();
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
   const [showSaleColumns, setShowSaleColumns] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
