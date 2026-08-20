@@ -8,6 +8,7 @@ import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
 import { useSaleColumnSearch } from '../hooks/useSaleColumnSearch';
 import { parseMultiSource } from '../lib/appUtils';
 import { splitActiveRetired, isRetired } from '../lib/sourceArchiveUtils';
+import { isLocked } from '../lib/sourceLockUtils';
 import { resolveChipRender } from '../lib/colorRender';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
 import { Column, RowData } from '../types';
@@ -24,6 +25,7 @@ interface RangeSumOverviewModalProps {
   onSaveColWidths?: (widths: Record<string, number>) => void;
   initialPinnedCols?: string[];
   onSavePinnedCols?: (cols: string[]) => void;
+  minStockAlert?: number;
 }
 
 export function RangeSumOverviewModal({
@@ -35,7 +37,8 @@ export function RangeSumOverviewModal({
   initialColWidths,
   onSaveColWidths,
   initialPinnedCols,
-  onSavePinnedCols
+  onSavePinnedCols,
+  minStockAlert = 0
 }: RangeSumOverviewModalProps) {
   const { toast } = useToast();
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
@@ -334,15 +337,17 @@ export function RangeSumOverviewModal({
       <div className={`p-1.5 border-r border-b ${borderClass} overflow-hidden whitespace-pre-wrap ${bgClass} ${textClass} font-bold text-center h-full min-h-[40px] flex items-center`}>
         <div className="flex flex-col gap-1 justify-center w-full">
           {breakdown.map((b: any, idx: number) => {
-            const render = resolveChipRender(b.color);
+            const locked = isLocked(b);
+            const alert = b.isAlert;
+            const render = alert ? null : resolveChipRender(b.color);
             return (
               <div 
                 key={idx} 
-                className={`w-full px-1.5 py-0.5 rounded text-[14px] font-bold border flex items-center justify-between gap-1 shadow-sm ${render?.kind === 'class' ? render.className : ""}`}
+                className={`w-full px-1.5 py-0.5 rounded text-[14px] font-bold border flex items-center justify-between gap-1 shadow-sm ${alert ? "bg-[#FF0000] text-white border-[#cc0000]" : (render?.kind === 'class' ? render.className : "")} ${locked ? "opacity-50 grayscale" : ""}`}
                 style={render?.kind === 'style' ? render.style : undefined}
               >
-                <span className="shrink-0 flex items-center gap-1 capitalize">
-                  {highlightText(b.source, deferredSearchQuery)}:
+                <span className={`shrink-0 flex items-center gap-1 capitalize ${alert ? "text-white font-extrabold" : ""}`}>
+                  {highlightText(b.source, deferredSearchQuery)}:{locked && <span className="ml-1 text-[10px]">🔒</span>}
                   {isTotalQty && isRetired(b) && (
                     <span className="text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-none">(retired)</span>
                   )}
@@ -351,12 +356,10 @@ export function RangeSumOverviewModal({
               </div>
             );
           })}
-          {(breakdown.length >= 2 || forceTotalRow) && (
-             <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
-               <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
-               <span>{highlightText(String(total), deferredSearchQuery)}</span>
-             </div>
-          )}
+          <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
+             <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
+             <span>{highlightText(String(total), deferredSearchQuery)}</span>
+          </div>
         </div>
       </div>
     );
@@ -742,6 +745,7 @@ export function RangeSumOverviewModal({
                         return {
                           ...ts,
                           qty: (parseFloat(ts.qty) || 0) - totalSaleForSource,
+                          isAlert: ((parseFloat(ts.qty) || 0) - totalSaleForSource) <= minStockAlert,
                         };
                       });
                       

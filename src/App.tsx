@@ -2938,6 +2938,7 @@ function AppContent() {
         onClose={() => setIsSumModalOpen(false)}
         columns={activeConfig.columns}
         rows={activeRows}
+        minStockAlert={activeConfig.minStockAlert}
         onApply={(startName, endName, keys, selectedSources) => {
           setActiveCustomSum({
             startName,
