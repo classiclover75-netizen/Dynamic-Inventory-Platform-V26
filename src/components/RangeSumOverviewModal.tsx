@@ -220,8 +220,8 @@ export function RangeSumOverviewModal({
     const isLastPinned = isPinned && colId === lastPinnedColId;
     let pinnedBg = '';
     if (isPinned) {
-      if (colId === '__range_sum') pinnedBg = 'bg-blue-100';
-      else pinnedBg = 'bg-gray-200';
+      if (colId === '__range_sum') pinnedBg = '!bg-blue-100';
+      else pinnedBg = '!bg-gray-200';
     }
     return `${baseCls} sticky top-0 ${isPinned ? 'z-30 ' + pinnedBg : 'z-20'} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
   };
@@ -241,8 +241,8 @@ export function RangeSumOverviewModal({
     const isLastPinned = isPinned && colId === lastPinnedColId;
     let pinnedBg = '';
     if (isPinned) {
-      if (colId === '__range_sum') pinnedBg = 'bg-blue-100';
-      else pinnedBg = 'bg-gray-100';
+      if (colId === '__range_sum') pinnedBg = '!bg-blue-100';
+      else pinnedBg = '!bg-gray-100';
     }
     return `${baseCls} ${isPinned ? 'sticky z-[15] ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
   };
@@ -763,7 +763,7 @@ export function RangeSumOverviewModal({
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {rowNumbers.get(row.id) || (i + 1)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 border border-gray-200 bg-blue-50 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
+                  <td className={getBodyCls('__range_sum', "p-0 border border-black bg-blue-50 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-transparent', 'text-blue-700', 'border-blue-200', true, true)}
                   </td>
                   
