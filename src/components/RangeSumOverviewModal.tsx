@@ -30,6 +30,21 @@ interface RangeSumOverviewModalProps {
   onImageClick?: (rowId: string, imageKey: string) => void;
 }
 
+const SHADOW_CLASSES = {
+  black: {
+    firstAndLast: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000,inset_1px_0_0_#000]',
+    first: 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]',
+    last: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]',
+    middle: 'shadow-[inset_-1px_-1px_0_#000]'
+  },
+  blue: {
+    firstAndLast: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8,inset_1px_0_0_#1d4ed8]',
+    first: 'shadow-[inset_-1px_-1px_0_#1d4ed8,inset_1px_0_0_#1d4ed8]',
+    last: 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#1d4ed8]',
+    middle: 'shadow-[inset_-1px_-1px_0_#1d4ed8]'
+  }
+};
+
 export function RangeSumOverviewModal({
   isOpen,
   onClose,
@@ -221,14 +236,15 @@ export function RangeSumOverviewModal({
     const isFirst = colId === pinnedCols[0];
     let shadowCls = '';
     if (isPinned) {
+      const theme = colId === '__range_sum' ? SHADOW_CLASSES.blue : SHADOW_CLASSES.black;
       if (isFirst && isLast) {
-        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+        shadowCls = theme.firstAndLast;
       } else if (isFirst) {
-        shadowCls = 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+        shadowCls = theme.first;
       } else if (isLast) {
-        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]';
+        shadowCls = theme.last;
       } else {
-        shadowCls = 'shadow-[inset_-1px_-1px_0_#000]';
+        shadowCls = theme.middle;
       }
     }
     return `${baseCls} sticky top-0 ${isPinned ? 'z-30' : 'z-20'} ${shadowCls}`;
@@ -249,17 +265,17 @@ export function RangeSumOverviewModal({
     const isLast = colId === lastPinnedColId;
     const isFirst = colId === pinnedCols[0];
     const needsBg = isPinned && !baseCls.includes('bg-');
-    const bColor = colId === '__range_sum' ? '#bfdbfe' : '#000'; // blue-200 for __range_sum
     let shadowCls = '';
     if (isPinned) {
+      const theme = colId === '__range_sum' ? SHADOW_CLASSES.blue : SHADOW_CLASSES.black;
       if (isFirst && isLast) {
-        shadowCls = `shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_${bColor},inset_1px_0_0_${bColor}]`;
+        shadowCls = theme.firstAndLast;
       } else if (isFirst) {
-        shadowCls = `shadow-[inset_-1px_-1px_0_${bColor},inset_1px_0_0_${bColor}]`;
+        shadowCls = theme.first;
       } else if (isLast) {
-        shadowCls = `shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_${bColor}]`;
+        shadowCls = theme.last;
       } else {
-        shadowCls = `shadow-[inset_-1px_-1px_0_${bColor}]`;
+        shadowCls = theme.middle;
       }
     }
     return `${baseCls} ${isPinned ? 'sticky z-[15]' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls}`;
@@ -678,7 +694,7 @@ export function RangeSumOverviewModal({
         </div>
 
         <div className="flex flex-col gap-2 mb-2 shrink-0">
-          <div className="relative w-full border border-gray-300 rounded-md bg-white">
+          <div className="relative w-full border-2 rounded-md bg-white transition-colors" style={{ borderColor: '#2b579a' }}>
             <Search
               className="absolute left-2 top-2.5 text-gray-400"
               size={16}
@@ -781,7 +797,7 @@ export function RangeSumOverviewModal({
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {rowNumbers.get(row.id) || (i + 1)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 bg-blue-50/30 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
+                  <td className={getBodyCls('__range_sum', "p-0 border bg-blue-50/30 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-blue-50/30', 'text-blue-700', 'border-blue-200', true, true)}
                   </td>
                   
