@@ -145,8 +145,8 @@ export function RangeSumOverviewModal({
   const getColWidth = (id: string) => {
     if (colWidths[id]) return colWidths[id];
     if (id === '__row') return 60;
-    if (id === '__range_sum') return 220;
-    if (saleCols.some(c => c.key === id)) return 200;
+    if (id === '__range_sum') return 160;
+    if (saleCols.some(c => c.key === id)) return 240;
     return 150;
   };
 
