@@ -7,6 +7,7 @@ import { Modal, Button, Input } from './ui';
 import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
 import { useSaleColumnSearch } from '../hooks/useSaleColumnSearch';
 import { parseMultiSource } from '../lib/appUtils';
+import { splitActiveRetired, isRetired } from '../lib/sourceArchiveUtils';
 import { resolveChipRender } from '../lib/colorRender';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
 import { Column, RowData } from '../types';
@@ -211,7 +212,8 @@ export function RangeSumOverviewModal({
   const getHeaderCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLast = colId === lastPinnedColId;
-    return `${baseCls} ${isPinned ? 'sticky z-30' : 'relative z-20'} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const shadowCls = isPinned ? (isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#e5e7eb]' : 'shadow-[inset_-1px_-1px_0_#e5e7eb]') : '';
+    return `${baseCls} ${isPinned ? 'sticky z-30' : 'relative z-20'} ${shadowCls} ${isLast ? 'border-r-gray-400' : ''}`;
   };
 
   const getHeaderSty = (colId: string, width: number) => {
@@ -228,7 +230,8 @@ export function RangeSumOverviewModal({
     const isPinned = pinnedCols.includes(colId);
     const isLast = colId === lastPinnedColId;
     const needsBg = isPinned && !baseCls.includes('bg-');
-    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${needsBg ? 'bg-white' : ''} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const shadowCls = isPinned ? (isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#e5e7eb]' : 'shadow-[inset_-1px_-1px_0_#e5e7eb]') : '';
+    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls} ${isLast ? 'border-r-gray-400' : ''}`;
   };
 
   const getBodySty = (colId: string) => {
@@ -237,6 +240,13 @@ export function RangeSumOverviewModal({
       ...(isPinned ? { left: pinnedOffsets[colId] } : {})
     };
   };
+
+
+  const rowNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((r, i) => map.set(r.id, i + 1));
+    return map;
+  }, [rows]);
 
   const filteredRows = useMemo(() => {
     if (!deferredSearchQuery) return rows;
@@ -312,7 +322,7 @@ export function RangeSumOverviewModal({
     );
   };
 
-  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200') => {
+  const renderMultiSourceCell = (rawVal: any, bgClass = 'bg-white', textClass = 'text-gray-900', borderClass = 'border-gray-200', isTotalQty = false, forceTotalRow = false) => {
     const breakdown = parseMultiSource(rawVal);
     if (breakdown.length === 0) return null;
     let total = 0;
@@ -331,15 +341,22 @@ export function RangeSumOverviewModal({
                 className={`w-full px-1.5 py-0.5 rounded text-[14px] font-bold border flex items-center justify-between gap-1 shadow-sm ${render?.kind === 'class' ? render.className : ""}`}
                 style={render?.kind === 'style' ? render.style : undefined}
               >
-                <span className="shrink-0 capitalize">{b.source}:</span>
-                <span className="flex-1 text-right">{b.qty}</span>
+                <span className="shrink-0 flex items-center gap-1 capitalize">
+                  {highlightText(b.source, deferredSearchQuery)}:
+                  {isTotalQty && isRetired(b) && (
+                    <span className="text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded-full whitespace-nowrap leading-none">(retired)</span>
+                  )}
+                </span>
+                <span className="flex-1 text-right">{highlightText(String(b.qty), deferredSearchQuery)}</span>
               </div>
             );
           })}
-          <div className={`mt-1 pt-1 border-t ${borderClass} font-extrabold text-[15px] flex items-center justify-between w-full`}>
-            <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
-            <span>{total}</span>
-          </div>
+          {(breakdown.length >= 2 || forceTotalRow) && (
+             <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
+               <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
+               <span>{highlightText(String(total), deferredSearchQuery)}</span>
+             </div>
+          )}
         </div>
       </div>
     );
@@ -397,7 +414,7 @@ export function RangeSumOverviewModal({
       const worksheet = workbook.addWorksheet('Range Sum');
       
       const exportCols = [
-        { name: "Row", width: 10 },
+        { name: "Row No. 🔒", width: 10 },
         { name: "Total Sale Range Column Sum", width: 25 },
         ...visibleColumns.map(c => ({
           name: c.name,
@@ -417,7 +434,7 @@ export function RangeSumOverviewModal({
       for (let i = 0; i < filteredRows.length; i++) {
         const row = filteredRows[i];
         const rowValues: any = {};
-        rowValues["Row"] = i + 1;
+        rowValues["Row No. 🔒"] = rowNumbers.get(row.id) || (i + 1);
         
         const sumBreakdown = getRowSumBreakdown(row);
         let sumTotal = 0;
@@ -636,8 +653,8 @@ export function RangeSumOverviewModal({
             <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
               <tr>
                 <th className={getHeaderCls('__row', "p-2 border text-left bg-gray-200")} style={getHeaderSty('__row', getColWidth('__row'))}>
-                  <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Row</div>{renderPinBtn('__row')}</div>
-                  <OverviewColumnResizeHandle colId="__row" width={getColWidth('__row')} startResize={startResize} resetCol={resetCol} columnName="Row" />
+                  <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Row No. 🔒</div>{renderPinBtn('__row')}</div>
+                  <OverviewColumnResizeHandle colId="__row" width={getColWidth('__row')} startResize={startResize} resetCol={resetCol} columnName="Row No. 🔒" />
                 </th>
                 <th className={getHeaderCls('__range_sum', "p-2 border text-left bg-blue-50 text-blue-800")} style={getHeaderSty('__range_sum', getColWidth('__range_sum'))}>
                   <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Total Sale Range Column Sum</div>{renderPinBtn('__range_sum')}</div>
@@ -693,7 +710,7 @@ export function RangeSumOverviewModal({
               {filteredRows.map((row, i) => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
-                    {i + 1}
+                    {rowNumbers.get(row.id) || (i + 1)}
                   </td>
                   <td className={getBodyCls('__range_sum', "p-0 border bg-white align-top")} style={getBodySty('__range_sum')}>
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-purple-50', 'text-purple-900', 'border-purple-200')}
@@ -710,10 +727,35 @@ export function RangeSumOverviewModal({
                         </td>
                       );
                     }
+                    if (c.key === "remaining_qty") {
+                      const totalSources = parseMultiSource(row.total_qty);
+                      const saleCols = columns.filter((col) => col.type === "sale_tracker");
+                      const { active: activeTotalSources } = splitActiveRetired(totalSources);
+                      
+                      const remainingSources = activeTotalSources.map((ts: any) => {
+                        let totalSaleForSource = 0;
+                        saleCols.forEach((sc) => {
+                          const sales = parseMultiSource(row[sc.key]);
+                          const saleEntry = sales.find((s: any) => s.source === ts.source);
+                          if (saleEntry) totalSaleForSource += parseFloat(saleEntry.qty) || 0;
+                        });
+                        return {
+                          ...ts,
+                          qty: (parseFloat(ts.qty) || 0) - totalSaleForSource,
+                        };
+                      });
+                      
+                      return (
+                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
+                          {renderMultiSourceCell(JSON.stringify(remainingSources), 'bg-white', 'text-gray-900', 'border-gray-200', false, totalSources.length >= 2)}
+                        </td>
+                      );
+                    }
+
                     if (c.type === "sale_tracker" || c.key === "total_qty") {
                       return (
                         <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
-                          {renderMultiSourceCell(row[c.key])}
+                          {renderMultiSourceCell(row[c.key], 'bg-white', 'text-gray-900', 'border-gray-200', c.key === 'total_qty')}
                         </td>
                       );
                     }
