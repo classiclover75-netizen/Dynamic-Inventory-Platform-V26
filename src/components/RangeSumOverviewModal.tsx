@@ -8,6 +8,7 @@ import { useSaleColumnRangeSelect } from '../hooks/useSaleColumnRangeSelect';
 import { useSaleColumnSearch } from '../hooks/useSaleColumnSearch';
 import { parseMultiSource } from '../lib/appUtils';
 import { splitActiveRetired, isRetired } from '../lib/sourceArchiveUtils';
+import { computeRemainingQtyBreakdown } from '../lib/rangeSumRemainingQty';
 import { isLocked } from '../lib/sourceLockUtils';
 import { resolveChipRender } from '../lib/colorRender';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
@@ -283,6 +284,14 @@ export function RangeSumOverviewModal({
     return rows.filter(row => {
       return tokens.every(token => {
         return visibleColumns.some(c => {
+          if (c.type === 'sale_tracker' || c.key === 'total_qty') {
+            const sources = parseMultiSource(row[c.key]);
+            if (sources.length === 0) return false;
+            return sources.some((s: any) => 
+              String(s.source).toLowerCase().includes(token) || 
+              String(s.qty).toLowerCase().includes(token)
+            );
+          }
           const rawVal = row[c.key];
           const strVal = formatCellDisplay(rawVal).toLowerCase();
           return strVal.includes(token);
@@ -338,7 +347,7 @@ export function RangeSumOverviewModal({
     const regex = new RegExp("(" + escapedStrings.join("|") + ")", "gi");
     const parts = cleanText.split(regex);
     return parts.map((part, i) =>
-      regex.test(part) ? (
+      (i % 2 !== 0) ? (
         <span
           key={i}
           className="bg-yellow-300 text-black font-bold px-[1px] rounded-sm"
@@ -347,7 +356,7 @@ export function RangeSumOverviewModal({
         </span>
       ) : (
         part
-      ),
+      )
     );
   };
 
@@ -443,17 +452,18 @@ export function RangeSumOverviewModal({
       const worksheet = workbook.addWorksheet('Range Sum');
       
       const exportCols = [
-        { name: "Row No. 🔒", width: 10 },
-        { name: "Total Sale Range Column Sum", width: 25 },
+        { header: "Row No. 🔒", key: "__row", width: 10 },
+        { header: "Total Sale Range Column Sum", key: "__range_sum", width: 25 },
         ...visibleColumns.map(c => ({
-          name: c.name,
+          header: c.name,
+          key: c.key,
           width: c.type === 'image' || c.type === 'file' ? 12 : 20
         }))
       ];
       
       worksheet.columns = exportCols.map(c => ({
-        header: c.name,
-        key: c.name,
+        header: c.header,
+        key: c.key,
         width: c.width
       }));
       
@@ -463,21 +473,35 @@ export function RangeSumOverviewModal({
       for (let i = 0; i < filteredRows.length; i++) {
         const row = filteredRows[i];
         const rowValues: any = {};
-        rowValues["Row No. 🔒"] = rowNumbers.get(row.id) || (i + 1);
+        rowValues["__row"] = rowNumbers.get(row.id) || (i + 1);
         
         const sumBreakdown = getRowSumBreakdown(row);
         let sumTotal = 0;
         sumBreakdown.forEach(b => sumTotal += parseFloat(b.qty) || 0);
-        rowValues["Total Sale Range Column Sum"] = sumTotal;
+        rowValues["__range_sum"] = sumTotal;
         
         for (const c of visibleColumns) {
            if (c.type === 'image' || c.type === 'file') {
               const val = row[c.key];
-              rowValues[c.name] = val ? (c.type === 'image' ? 'Image' : 'File') : '';
+              rowValues[c.key] = val ? (c.type === 'image' ? 'Image' : 'File') : '';
+           } else if (c.key === 'remaining_qty') {
+              const saleCols = columns.filter((col) => col.type === "sale_tracker");
+              const remainingSources = computeRemainingQtyBreakdown(row, saleCols, minStockAlert);
+              if (remainingSources.length === 0) {
+                 rowValues[c.key] = "";
+              } else {
+                 let total = 0;
+                 const parts = remainingSources.map((s: any) => {
+                    const q = parseFloat(s.qty) || 0;
+                    total += q;
+                    return `${s.source}: ${s.qty}`;
+                 });
+                 rowValues[c.key] = `${parts.join(', ')} (Total: ${total})`;
+              }
            } else if (c.type === 'sale_tracker' || c.key === "total_qty") {
               const sources = parseMultiSource(row[c.key]);
               if (sources.length === 0) {
-                 rowValues[c.name] = "";
+                 rowValues[c.key] = "";
               } else {
                  let total = 0;
                  const parts = sources.map((s: any) => {
@@ -485,10 +509,10 @@ export function RangeSumOverviewModal({
                     total += q;
                     return `${s.source}: ${s.qty}`;
                  });
-                 rowValues[c.name] = `${parts.join(', ')} (Total: ${total})`;
+                 rowValues[c.key] = `${parts.join(', ')} (Total: ${total})`;
               }
            } else {
-              rowValues[c.name] = formatCellDisplay(row[c.key]);
+              rowValues[c.key] = formatCellDisplay(row[c.key]);
            }
         }
         worksheet.addRow(rowValues);
@@ -757,23 +781,8 @@ export function RangeSumOverviewModal({
                       );
                     }
                     if (c.key === "remaining_qty") {
-                      const totalSources = parseMultiSource(row.total_qty);
                       const saleCols = columns.filter((col) => col.type === "sale_tracker");
-                      const { active: activeTotalSources } = splitActiveRetired(totalSources);
-                      
-                      const remainingSources = activeTotalSources.map((ts: any) => {
-                        let totalSaleForSource = 0;
-                        saleCols.forEach((sc) => {
-                          const sales = parseMultiSource(row[sc.key]);
-                          const saleEntry = sales.find((s: any) => s.source === ts.source);
-                          if (saleEntry) totalSaleForSource += parseFloat(saleEntry.qty) || 0;
-                        });
-                        return {
-                          ...ts,
-                          qty: (parseFloat(ts.qty) || 0) - totalSaleForSource,
-                          isAlert: ((parseFloat(ts.qty) || 0) - totalSaleForSource) <= minStockAlert,
-                        };
-                      });
+                      const remainingSources = computeRemainingQtyBreakdown(row, saleCols, minStockAlert);
                       
                       return (
                         <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
