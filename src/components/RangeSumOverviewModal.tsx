@@ -151,7 +151,7 @@ export function RangeSumOverviewModal({
   };
 
   const { pinnedCols, togglePin, pinnedOffsets, lastPinnedColId } = useOverviewColumnPin(
-    initialPinnedCols || ['__row', '__range_sum'], 
+    initialPinnedCols, 
     onSavePinnedCols, 
     getColWidth, 
     colWidths, 
@@ -217,8 +217,20 @@ export function RangeSumOverviewModal({
   const getHeaderCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLast = colId === lastPinnedColId;
-    const shadowCls = isPinned ? (isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#e5e7eb]' : 'shadow-[inset_-1px_-1px_0_#e5e7eb]') : '';
-    return `${baseCls} ${isPinned ? 'sticky z-30' : 'relative z-20'} ${shadowCls} ${isLast ? 'border-r-gray-400' : ''}`;
+    const isFirst = colId === pinnedCols[0];
+    let shadowCls = '';
+    if (isPinned) {
+      if (isFirst && isLast) {
+        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+      } else if (isFirst) {
+        shadowCls = 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+      } else if (isLast) {
+        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]';
+      } else {
+        shadowCls = 'shadow-[inset_-1px_-1px_0_#000]';
+      }
+    }
+    return `${baseCls} sticky top-0 ${isPinned ? 'z-30' : 'z-20'} ${shadowCls}`;
   };
 
   const getHeaderSty = (colId: string, width: number) => {
@@ -234,9 +246,21 @@ export function RangeSumOverviewModal({
   const getBodyCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLast = colId === lastPinnedColId;
+    const isFirst = colId === pinnedCols[0];
     const needsBg = isPinned && !baseCls.includes('bg-');
-    const shadowCls = isPinned ? (isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#e5e7eb]' : 'shadow-[inset_-1px_-1px_0_#e5e7eb]') : '';
-    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls} ${isLast ? 'border-r-gray-400' : ''}`;
+    let shadowCls = '';
+    if (isPinned) {
+      if (isFirst && isLast) {
+        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+      } else if (isFirst) {
+        shadowCls = 'shadow-[inset_-1px_-1px_0_#000,inset_1px_0_0_#000]';
+      } else if (isLast) {
+        shadowCls = 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15),inset_-1px_-1px_0_#000]';
+      } else {
+        shadowCls = 'shadow-[inset_-1px_-1px_0_#000]';
+      }
+    }
+    return `${baseCls} ${isPinned ? 'sticky z-[15]' : ''} ${needsBg ? 'bg-white' : ''} ${shadowCls}`;
   };
 
   const getBodySty = (colId: string) => {
@@ -655,7 +679,7 @@ export function RangeSumOverviewModal({
         
         <div className="flex-1 overflow-auto border rounded relative bg-white">
           <table className="w-max table-fixed text-sm border-collapse" style={{ width: totalWidth + 'px' }}>
-            <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+            <thead className="bg-gray-100 shadow-sm">
               <tr>
                 <th className={getHeaderCls('__row', "p-2 border text-left bg-gray-200")} style={getHeaderSty('__row', getColWidth('__row'))}>
                   <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Row No. 🔒</div>{renderPinBtn('__row')}</div>

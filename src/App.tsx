@@ -708,7 +708,7 @@ function AppContent() {
   const activeRows = state.pageRows[state.activePage] || [];
 
   const rangeSumInitialColWidths = useMemo(() => activeConfig?.rangeSumColWidths || {}, [activeConfig?.rangeSumColWidths]);
-  const rangeSumInitialPinnedCols = useMemo(() => activeConfig?.rangeSumPinnedCols, [activeConfig?.rangeSumPinnedCols]);
+  const rangeSumInitialPinnedCols = useMemo(() => activeConfig?.rangeSumPinnedCols || ['__row', '__range_sum'], [activeConfig?.rangeSumPinnedCols]);
 
   const handleToggleColumnArchive = async (
     colKey: string,
