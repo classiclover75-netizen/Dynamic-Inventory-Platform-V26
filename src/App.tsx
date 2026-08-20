@@ -2936,6 +2936,10 @@ function AppContent() {
           setIsSumModalOpen(false);
           toast(`Calculated sum for ${keys.length} columns.`);
         }}
+        initialColWidths={activeConfig?.rangeSumColWidths || {}}
+        onSaveColWidths={(widths) => handleSaveActivePageSettings({ ...activeConfig, rangeSumColWidths: widths } as any, false)}
+        initialPinnedCols={activeConfig?.rangeSumPinnedCols}
+        onSavePinnedCols={(cols) => handleSaveActivePageSettings({ ...activeConfig, rangeSumPinnedCols: cols } as any, false)}
       />
 
       <ExportChoiceModal

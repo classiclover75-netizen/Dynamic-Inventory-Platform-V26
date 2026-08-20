@@ -7,6 +7,8 @@ import { parseMultiSource } from '../lib/appUtils';
 import { resolveChipRender } from '../lib/colorRender';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
 import { Column, RowData } from '../types';
+import { useOverviewColumnPin } from '../hooks/useOverviewColumnPin';
+import { OverviewColumnResizeHandle } from './OverviewColumnResizeHandle';
 
 interface RangeSumOverviewModalProps {
   isOpen: boolean;
@@ -14,6 +16,10 @@ interface RangeSumOverviewModalProps {
   columns: Column[];
   rows: RowData[];
   onApply: (startName: string, endName: string, keys: string[]) => void;
+  initialColWidths?: Record<string, number>;
+  onSaveColWidths?: (widths: Record<string, number>) => void;
+  initialPinnedCols?: string[];
+  onSavePinnedCols?: (cols: string[]) => void;
 }
 
 export function RangeSumOverviewModal({
@@ -21,7 +27,11 @@ export function RangeSumOverviewModal({
   onClose,
   columns,
   rows,
-  onApply
+  onApply,
+  initialColWidths,
+  onSaveColWidths,
+  initialPinnedCols,
+  onSavePinnedCols
 }: RangeSumOverviewModalProps) {
   const saleCols = useMemo(() => columns.filter(c => c.type === "sale_tracker"), [columns]);
   const [showSaleColumns, setShowSaleColumns] = useState(true);
@@ -31,13 +41,16 @@ export function RangeSumOverviewModal({
   const { selectedKeys, toggle, selectRange, clear, selectAll, anchorKey } = useSaleColumnRangeSelect();
   const orderedSaleColKeys = useMemo(() => saleCols.map(c => c.key), [saleCols]);
 
+  const [colWidths, setColWidths] = useState<Record<string, number>>(initialColWidths || {});
+
   useEffect(() => {
     if (isOpen) {
       selectAll(orderedSaleColKeys);
       setShowSaleColumns(true);
       setSearchQuery("");
+      setColWidths(initialColWidths || {});
     }
-  }, [isOpen, selectAll, orderedSaleColKeys]);
+  }, [isOpen, selectAll, orderedSaleColKeys, initialColWidths]);
 
   const {
     searchText: saleSearchText,
@@ -67,6 +80,109 @@ export function RangeSumOverviewModal({
   }, [columns, showSaleColumns, saleEffectiveTerms]);
 
   const saleTrackerColsVisible = useMemo(() => visibleColumns.filter(c => c.type === 'sale_tracker'), [visibleColumns]);
+
+  const colIds = useMemo(() => ['__row', '__range_sum', ...visibleColumns.map(c => c.key)], [visibleColumns]);
+
+  const getColWidth = (id: string) => {
+    if (colWidths[id]) return colWidths[id];
+    if (id === '__row') return 60;
+    if (id === '__range_sum') return 220;
+    if (saleCols.some(c => c.key === id)) return 200;
+    return 150;
+  };
+
+  const { pinnedCols, togglePin, pinnedOffsets, lastPinnedColId } = useOverviewColumnPin(
+    initialPinnedCols || ['__row', '__range_sum'], 
+    onSavePinnedCols, 
+    getColWidth, 
+    colWidths, 
+    isOpen, 
+    colIds
+  );
+
+  const totalWidth = colIds.reduce((sum, id) => sum + getColWidth(id), 0);
+
+  const startResize = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    const th = (e.currentTarget as HTMLElement).parentElement as HTMLElement;
+    const startX = e.clientX;
+    const startW = colWidths[id] ?? th.offsetWidth;
+    document.body.style.userSelect = 'none';
+    
+    const onMove = (ev: MouseEvent) => {
+      const newW = Math.max(60, startW + (ev.clientX - startX));
+      setColWidths(prev => ({ ...prev, [id]: newW }));
+    };
+    
+    const onUp = () => {
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      setColWidths(prev => {
+        if (onSaveColWidths) onSaveColWidths(prev);
+        return prev;
+      });
+    };
+    
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const resetCol = (id: string) => {
+    setColWidths(prev => {
+      const n = { ...prev };
+      delete n[id];
+      if (onSaveColWidths) {
+        onSaveColWidths(n);
+      }
+      return n;
+    });
+  };
+
+  const renderPinBtn = (colId: string) => {
+    const isPinned = pinnedCols.includes(colId);
+    return (
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          togglePin(colId);
+        }}
+        className={`shrink-0 p-0 m-0 ml-1 bg-transparent border-0 cursor-pointer transition-opacity ${isPinned ? 'opacity-100 hover:opacity-80' : 'opacity-40 hover:opacity-100 grayscale-[0.5]'}`}
+        title={isPinned ? "Unpin column (unfreeze)" : "Pin column (freeze)"}
+      >
+        📌
+      </button>
+    );
+  };
+
+  const getHeaderCls = (colId: string, baseCls: string) => {
+    const isPinned = pinnedCols.includes(colId);
+    const isLast = colId === lastPinnedColId;
+    return `${baseCls} ${isPinned ? 'sticky z-30' : 'relative z-20'} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+  };
+
+  const getHeaderSty = (colId: string, width: number) => {
+    const isPinned = pinnedCols.includes(colId);
+    return {
+      width,
+      minWidth: width,
+      maxWidth: width,
+      ...(isPinned ? { left: pinnedOffsets[colId] } : {})
+    };
+  };
+
+  const getBodyCls = (colId: string, baseCls: string) => {
+    const isPinned = pinnedCols.includes(colId);
+    const isLast = colId === lastPinnedColId;
+    return `${baseCls} ${isPinned ? 'sticky z-10' : ''} ${isLast ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+  };
+
+  const getBodySty = (colId: string, width: number) => {
+    const isPinned = pinnedCols.includes(colId);
+    return {
+      ...(isPinned ? { left: pinnedOffsets[colId] } : {})
+    };
+  };
 
   const filteredRows = useMemo(() => {
     if (!deferredSearchQuery) return rows;
@@ -215,8 +331,6 @@ export function RangeSumOverviewModal({
     onApply(startName, endName, keys);
   };
 
-  const colWidth = 200;
-
   return (
     <Modal 
       isOpen={isOpen} 
@@ -312,20 +426,22 @@ export function RangeSumOverviewModal({
         )}
         
         <div className="flex-1 overflow-auto border rounded relative bg-white">
-          <table className="w-max table-fixed text-sm border-collapse">
-            <thead className="sticky top-0 bg-gray-100 z-20 shadow-sm">
+          <table className="w-max table-fixed text-sm border-collapse" style={{ width: totalWidth + 'px' }}>
+            <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
               <tr>
-                <th className="p-2 border text-left bg-gray-200 sticky left-0 z-30" style={{ width: 60, minWidth: 60 }}>
-                  Row
+                <th className={getHeaderCls('__row', "p-2 border text-left bg-gray-200")} style={getHeaderSty('__row', getColWidth('__row'))}>
+                  <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Row</div>{renderPinBtn('__row')}</div>
+                  <OverviewColumnResizeHandle colId="__row" width={getColWidth('__row')} startResize={startResize} resetCol={resetCol} columnName="Row" />
                 </th>
-                <th className="p-2 border text-left bg-blue-50 text-blue-800 sticky left-[60px] z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400" style={{ width: 220, minWidth: 220 }}>
-                  Total Sale Range Column Sum
+                <th className={getHeaderCls('__range_sum', "p-2 border text-left bg-blue-50 text-blue-800")} style={getHeaderSty('__range_sum', getColWidth('__range_sum'))}>
+                  <div className="flex items-center justify-between w-full"><div className="flex items-center gap-1 min-w-0">Total Sale Range Column Sum</div>{renderPinBtn('__range_sum')}</div>
+                  <OverviewColumnResizeHandle colId="__range_sum" width={getColWidth('__range_sum')} startResize={startResize} resetCol={resetCol} columnName="Total Sale Range Column Sum" />
                 </th>
                 {visibleColumns.map((c, i) => {
                   const isSale = c.type === 'sale_tracker';
                   const isUncheckedSaleCol = isSale && !selectedKeys.has(c.key);
                   return (
-                  <th key={c.key} className={`p-2 border text-left relative ${!isSale ? 'bg-gray-100' : ''}`} style={{ width: isSale ? colWidth : 150, minWidth: isSale ? colWidth : 150 }}>
+                  <th key={c.key} className={getHeaderCls(c.key, `p-2 border text-left ${!isSale ? 'bg-gray-100' : ''}`)} style={getHeaderSty(c.key, getColWidth(c.key))}>
                     <div className="flex items-start justify-between w-full"><div className="flex items-start gap-1 min-w-0">
                       {isSale && (
                       <span className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors cursor-pointer hover:bg-gray-300 mr-1 ${selectedKeys.has(c.key) ? 'bg-blue-100' : ''} ${c.key === anchorKey ? 'ring-2 ring-purple-500' : ''}`}>
@@ -361,7 +477,8 @@ export function RangeSumOverviewModal({
                           });
                         })()} {c.locked && "🔒"}
                       </span>
-                    </div></div>
+                    </div>{renderPinBtn(c.key)}</div>
+                    <OverviewColumnResizeHandle colId={c.key} width={getColWidth(c.key)} startResize={startResize} resetCol={resetCol} columnName={c.name} />
                   </th>
                 )})}
               </tr>
@@ -369,10 +486,10 @@ export function RangeSumOverviewModal({
             <tbody>
               {filteredRows.map((row, i) => (
                 <tr key={row.id} className="hover:bg-gray-50">
-                  <td className="p-2 border text-center font-bold sticky left-0 bg-gray-100 z-10">
+                  <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row', getColWidth('__row'))}>
                     {i + 1}
                   </td>
-                  <td className="p-0 border sticky left-[60px] bg-white z-10 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400 align-top">
+                  <td className={getBodyCls('__range_sum', "p-0 border bg-white align-top")} style={getBodySty('__range_sum', getColWidth('__range_sum'))}>
                     {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-purple-50', 'text-purple-900', 'border-purple-200')}
                   </td>
                   
@@ -380,16 +497,16 @@ export function RangeSumOverviewModal({
                     if (c.type === "image" || c.type === "file") {
                       const imgUrl = getImageUrl(row[c.key]);
                       return (
-                        <td key={c.key} className="p-2 border align-top text-center">
+                        <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key, getColWidth(c.key))}>
                           {imgUrl ? (
-                            <img src={imgUrl} alt="" className="w-10 h-10 object-contain mx-auto" />
+                            <img src={imgUrl} alt="" className="w-10 h-10 object-contain mx-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           ) : null}
                         </td>
                       );
                     }
                     if (c.type === "sale_tracker" || c.key === "total_qty") {
                       return (
-                        <td key={c.key} className="p-0 border align-top">
+                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key, getColWidth(c.key))}>
                           {renderMultiSourceCell(row[c.key])}
                         </td>
                       );
@@ -398,7 +515,7 @@ export function RangeSumOverviewModal({
                     const rawVal = row[c.key];
                     const strVal = formatCellDisplay(rawVal);
                     return (
-                       <td key={c.key} className="p-2 border align-top break-words">
+                       <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top break-words")} style={getBodySty(c.key, getColWidth(c.key))}>
                          <div className="flex items-center gap-1 flex-wrap">
                            {highlightText(strVal, deferredSearchQuery)}
                          </div>
