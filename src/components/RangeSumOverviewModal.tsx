@@ -52,6 +52,8 @@ export function RangeSumOverviewModal({
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
   const [sourceSearchQuery, setSourceSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [sortBy, setSortBy] = useState("Default");
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const sourceDropdownRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -429,6 +431,35 @@ export function RangeSumOverviewModal({
     });
   };
 
+  const getColumnRowTotal = (row: RowData, colKey: string) => {
+    if (colKey === "__range_sum") {
+      return getRowSumBreakdown(row).reduce((acc, entry) => acc + (parseFloat(entry.qty) || 0), 0);
+    }
+    if (colKey === "remaining_qty") {
+      const saleCols = columns.filter((c: any) => c.type === "sale_tracker");
+      return computeRemainingQtyBreakdown(row, saleCols, minStockAlert).reduce((acc: number, entry: any) => acc + (parseFloat(String(entry.qty)) || 0), 0);
+    }
+    return parseMultiSource(row[colKey]).reduce((acc: number, entry: any) => acc + (parseFloat(String(entry.qty)) || 0), 0);
+  };
+
+  const sortedRows = useMemo(() => {
+    if (sortBy === "Default") return filteredRows;
+    let key = "";
+    if (sortBy === "Total Sale Range Column Sum") key = "__range_sum";
+    else if (sortBy === "Total Qty") key = "total_qty";
+    else if (sortBy === "Remaining Qty") key = "remaining_qty";
+    else {
+      const matched = saleTrackerColsVisible.find((c: any) => c.name === sortBy);
+      if (matched) key = matched.key;
+    }
+    if (!key) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      const valA = getColumnRowTotal(a, key);
+      const valB = getColumnRowTotal(b, key);
+      return sortDir === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [filteredRows, sortBy, sortDir, saleTrackerColsVisible, rowNumbers]);
+
   const handleApply = () => {
     const validSelectedCols = saleTrackerColsVisible.filter(c => selectedKeys.has(c.key));
     if (validSelectedCols.length === 0) {
@@ -470,8 +501,8 @@ export function RangeSumOverviewModal({
       worksheet.getRow(1).font = { bold: true };
       worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
       
-      for (let i = 0; i < filteredRows.length; i++) {
-        const row = filteredRows[i];
+      for (let i = 0; i < sortedRows.length; i++) {
+        const row = sortedRows[i];
         const rowValues: any = {};
         rowValues["__row"] = rowNumbers.get(row.id) || (i + 1);
         
@@ -554,6 +585,18 @@ export function RangeSumOverviewModal({
                 />
                 Show Sale Columns
              </label>
+             <div className="flex items-center gap-2 text-sm bg-white p-1 rounded border shadow-sm">
+               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="border-none bg-transparent outline-none cursor-pointer py-1 pl-2 font-medium text-gray-700">
+                 <option value="Default">Default</option>
+                 <option value="Total Sale Range Column Sum">Total Sale Range Column Sum</option>
+                 <option value="Total Qty">Total Qty</option>
+                 <option value="Remaining Qty">Remaining Qty</option>
+                 {saleTrackerColsVisible.map((c: any) => <option key={c.key} value={c.name}>{c.name}</option>)}
+               </select>
+               <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} className="px-2 py-1 rounded font-medium border bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-300" title={sortDir === 'asc' ? 'Ascending' : 'Descending'}>
+                 {sortDir === 'asc' ? '↑' : '↓'}
+               </button>
+             </div>
              {showSaleColumns && (
                <div className="flex items-center gap-2">
                  <div className="relative shrink-0">
@@ -761,7 +804,7 @@ export function RangeSumOverviewModal({
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row, i) => (
+              {sortedRows.map((row, i) => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
                     {rowNumbers.get(row.id) || (i + 1)}
