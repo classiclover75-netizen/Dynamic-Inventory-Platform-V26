@@ -1056,7 +1056,8 @@ app.get('/api/export', async (_req, res) => {
         globalCopyBoxes: settings.globalCopyBoxes,
         globalRowNoWidth: settings.globalRowNoWidth,
         maxSearchHistory: settings.maxSearchHistory,
-        sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled
+        sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled,
+        pageOrder: settings.pageOrder || []
       };
     } else {
       state = await getLocalDB();
@@ -1114,7 +1115,8 @@ app.get('/api/export-zip', async (_req, res) => {
         globalCopyBoxes: settings.globalCopyBoxes,
         globalRowNoWidth: settings.globalRowNoWidth,
         maxSearchHistory: settings.maxSearchHistory,
-        sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled
+        sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled,
+        pageOrder: settings.pageOrder || []
       };
     } else {
       state = await getLocalDB();
