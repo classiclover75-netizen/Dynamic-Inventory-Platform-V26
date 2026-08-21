@@ -337,17 +337,21 @@ export function RangeSumOverviewModal({
 
     const regex = new RegExp("(" + escapedStrings.join("|") + ")", "gi");
     const parts = cleanText.split(regex);
-    return parts.map((part, i) =>
-      (i % 2 !== 0) ? (
-        <span
-          key={i}
-          className="bg-yellow-300 text-black font-bold rounded-sm"
-        >
-          {part}
-        </span>
-      ) : (
-        part
-      )
+    return (
+      <span className="whitespace-pre-wrap">
+        {parts.map((part, i) =>
+          (i % 2 !== 0) ? (
+            <span
+              key={i}
+              className="bg-yellow-300 text-black font-bold rounded-sm px-[1px]"
+            >
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </span>
     );
   };
 
