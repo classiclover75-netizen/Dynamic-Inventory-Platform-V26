@@ -798,8 +798,8 @@ export function RetiredSourcesOverviewModal({
                     return (
                       <td
                         key={c.key}
-                        className="p-2 border whitespace-pre-wrap break-words"
-                        style={{ width: getColWidth(c.key) + 'px', minWidth: getColWidth(c.key) + 'px' }}
+                        className={getBodyCls(c.key, "p-2 border whitespace-pre-wrap break-words bg-white")}
+                        style={getBodySty(c.key, getColWidth(c.key))}
                       >
                         {(c.type === "image" || c.type === "file") &&
                         rawVal &&
