@@ -896,9 +896,9 @@ export const TableView = ({
                                                     style={render?.kind === 'style' ? render.style : undefined}
                                                   >
                                                     <span className={`${alert ? "text-white font-extrabold" : ""} flex items-center`}>
-                                                      {s.source}:{locked && <span className="ml-1 text-[10px]">🔒</span>}
+                                                      {highlightText(s.source, colTokens, isGhost)}:{locked && <span className="ml-1 text-[10px]">🔒</span>}
                                                     </span>{" "}
-                                                    <span>{s.remaining}</span>
+                                                    <span>{highlightText(String(s.remaining), colTokens, isGhost)}</span>
                                                   </div>
                                                 );
                                               }
@@ -906,7 +906,7 @@ export const TableView = ({
                                             {totalSources.length >= 2 && (
                                               <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
-                                                <span>{remainingSources.reduce((sum, s) => sum + (Number(s.remaining) || 0), 0)}</span>
+                                                <span>{highlightText(String(remainingSources.reduce((sum, s) => sum + (Number(s.remaining) || 0), 0)), colTokens, isGhost)}</span>
                                               </div>
                                             )}
                                           </div>
@@ -948,9 +948,9 @@ export const TableView = ({
                                                   >
                                                     <div className="flex items-center gap-1">
                                                       <span className="flex items-center">
-                                                        {s.source}:{locked && <span className="ml-1 text-[13px]">🔒</span>}
+                                                        {highlightText(s.source, colTokens, isGhost)}:{locked && <span className="ml-1 text-[13px]">🔒</span>}
                                                       </span>{" "}
-                                                      <span>{s.qty}</span>
+                                                      <span>{highlightText(s.qty, colTokens, isGhost)}</span>
                                                     </div>
                                                     <button
                                                       onClick={(e) => {
@@ -970,7 +970,7 @@ export const TableView = ({
                                             {totalSources.length >= 2 && (
                                               <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
-                                                <span>{sumActive(totalSources)}</span>
+                                                <span>{highlightText(sumActive(totalSources), colTokens, isGhost)}</span>
                                               </div>
                                             )}
                                             {inlineRetired.map(
@@ -988,9 +988,9 @@ export const TableView = ({
                                                     style={render.kind === 'style' ? render.style : undefined}
                                                   >
                                                     <span>
-                                                      {s.source}:
+                                                      {highlightText(s.source, colTokens, isGhost)}:
                                                     </span>{" "}
-                                                    <span>{s.qty}</span>
+                                                    <span>{highlightText(s.qty, colTokens, isGhost)}</span>
                                                     <span className="ml-auto text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">(retired)</span>
                                                   </div>
                                                 );
@@ -1080,13 +1080,13 @@ export const TableView = ({
                                                       <div className="flex items-center justify-between w-full">
                                                         <div className="shrink-0 flex flex-col items-start justify-center">
                                                           <span className="flex items-center">
-                                                            {ts.source}:{locked && <span className="ml-1 text-[10px]">🔒</span>}
+                                                            {highlightText(ts.source, colTokens, isGhost)}:{locked && <span className="ml-1 text-[10px]">🔒</span>}
                                                           </span>
                                                           {isRetired(ts) && (
                                                             <span className="text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded-full whitespace-nowrap mt-0.5 self-start">(retired)</span>
                                                           )}
                                                         </div>
-                                                        <span className="flex-1 text-right">{saleQty}</span>
+                                                        <span className="flex-1 text-right">{highlightText(String(saleQty), colTokens, isGhost)}</span>
                                                       </div>
                                                       {!locked && <button
                                                         onClick={(e) => {
@@ -1180,10 +1180,10 @@ export const TableView = ({
                                             {totalSources.length >= 2 && (
                                               <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1.5">
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
-                                                <span>{totalSources.reduce((sum, ts) => {
+                                                <span>{highlightText(String(totalSources.reduce((sum, ts) => {
                                                     const currentSaleEntry = draftVal.find((s) => s.source === ts.source);
                                                     return sum + (currentSaleEntry ? (Number(currentSaleEntry.qty) || 0) : 0);
-                                                }, 0)}</span>
+                                                }, 0)), colTokens, isGhost)}</span>
                                               </div>
                                             )}
                                             {hiddenSources.length > 0 && (
