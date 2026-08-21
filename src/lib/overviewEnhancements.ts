@@ -114,7 +114,7 @@ export function sortOverviewRows(rows: any[], sortBy: string, sortDir: 'asc' | '
         }
 
         if (valA !== valB) {
-            return sortDir === 'asc' ? valA - valB : valB - valA;
+            return sortDir === 'asc' ? valB - valA : valA - valB;
         }
         return 0;
     });

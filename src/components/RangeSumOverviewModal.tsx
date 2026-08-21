@@ -456,7 +456,7 @@ export function RangeSumOverviewModal({
     return [...filteredRows].sort((a, b) => {
       const valA = getColumnRowTotal(a, key);
       const valB = getColumnRowTotal(b, key);
-      return sortDir === 'asc' ? valA - valB : valB - valA;
+      return sortDir === 'asc' ? valB - valA : valA - valB;
     });
   }, [filteredRows, sortBy, sortDir, saleTrackerColsVisible, rowNumbers]);
 
@@ -585,18 +585,6 @@ export function RangeSumOverviewModal({
                 />
                 Show Sale Columns
              </label>
-             <div className="flex items-center gap-2 text-sm bg-white p-1 rounded border shadow-sm">
-               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="border-none bg-transparent outline-none cursor-pointer py-1 pl-2 font-medium text-gray-700">
-                 <option value="Default">Default</option>
-                 <option value="Total Sale Range Column Sum">Total Sale Range Column Sum</option>
-                 <option value="Total Qty">Total Qty</option>
-                 <option value="Remaining Qty">Remaining Qty</option>
-                 {saleTrackerColsVisible.map((c: any) => <option key={c.key} value={c.name}>{c.name}</option>)}
-               </select>
-               <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} className="px-2 py-1 rounded font-medium border bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-300" title={sortDir === 'asc' ? 'Ascending' : 'Descending'}>
-                 {sortDir === 'asc' ? '↑' : '↓'}
-               </button>
-             </div>
              {showSaleColumns && (
                <div className="flex items-center gap-2">
                  <div className="relative shrink-0">
@@ -620,6 +608,18 @@ export function RangeSumOverviewModal({
                  )}
                </div>
              )}
+             <div className="flex items-center gap-2 text-sm bg-white p-1 rounded border shadow-sm">
+               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="border-none bg-transparent outline-none cursor-pointer py-1 pl-2 font-medium text-gray-700">
+                 <option value="Default">Default</option>
+                 <option value="Total Sale Range Column Sum">Total Sale Range Column Sum</option>
+                 <option value="Total Qty">Total Qty</option>
+                 <option value="Remaining Qty">Remaining Qty</option>
+                 {saleTrackerColsVisible.map((c: any) => <option key={c.key} value={c.name}>{c.name}</option>)}
+               </select>
+               <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} className="px-2 py-1 rounded font-medium border bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-300" title={sortDir === 'asc' ? 'Ascending' : 'Descending'}>
+                 {sortDir === 'asc' ? '↑' : '↓'}
+               </button>
+             </div>
            </div>
            <div className="flex items-center gap-2 shrink-0">
              <div className="relative" ref={sourceDropdownRef}>
