@@ -176,6 +176,7 @@ export function RangeSumOverviewModal({
     
     const onUp = () => {
       document.body.style.userSelect = '';
+      window.removeEventListener('blur', onUp);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       setColWidths(prev => {
@@ -186,6 +187,7 @@ export function RangeSumOverviewModal({
     
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onUp, { once: true });
   };
 
   const resetCol = (id: string) => {
@@ -263,8 +265,8 @@ export function RangeSumOverviewModal({
     const tokens = deferredSearchQuery.toLowerCase().split(/\s+/).filter(Boolean);
     const saleCols = columns.filter((col) => col.type === "sale_tracker");
     return rows.filter(row => {
-      return tokens.every(token => {
-        return visibleColumns.some(c => {
+      return visibleColumns.some(c => {
+        return tokens.every(token => {
           if (c.key === 'remaining_qty') {
             const remainingSources = computeRemainingQtyBreakdown(row, saleCols, minStockAlert);
             if (remainingSources.length === 0) return false;
@@ -339,7 +341,7 @@ export function RangeSumOverviewModal({
       (i % 2 !== 0) ? (
         <span
           key={i}
-          className="bg-yellow-300 text-black font-bold px-[1px] rounded-sm"
+          className="bg-yellow-300 text-black font-bold rounded-sm"
         >
           {part}
         </span>

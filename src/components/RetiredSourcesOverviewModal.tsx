@@ -125,6 +125,7 @@ export function RetiredSourcesOverviewModal({
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.style.userSelect = '';
+      window.removeEventListener('blur', onUp);
       if (onSaveColWidths) {
         onSaveColWidths(colWidthsRef.current);
       }
@@ -132,6 +133,7 @@ export function RetiredSourcesOverviewModal({
     
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onUp, { once: true });
   };
 
   const resetCol = (id: string) => {
@@ -283,7 +285,7 @@ export function RetiredSourcesOverviewModal({
       regex.test(part) ? (
         <span
           key={i}
-          className="bg-yellow-300 text-black font-bold px-[1px] rounded-sm"
+          className="bg-yellow-300 text-black font-bold rounded-sm"
         >
           {part}
         </span>
@@ -340,7 +342,8 @@ export function RetiredSourcesOverviewModal({
         }
         
         const tokens = searchString.split(/\s+/).filter(Boolean);
-        return tokens.every((t) => {
+        const candidateBlobs = colonIndex > 0 ? [targetBlob] : searchCols.map((c) => c.val);
+        return candidateBlobs.some((blob) => tokens.every((t) => {
           const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           let bStart = "";
           let bEnd = "";
@@ -356,8 +359,8 @@ export function RetiredSourcesOverviewModal({
               bEnd = "";
             }
           }
-          return new RegExp(bStart + escaped + bEnd, "i").test(targetBlob);
-        });
+          return new RegExp(bStart + escaped + bEnd, "i").test(blob);
+        }));
       });
       }); // missing filter closing
     }
