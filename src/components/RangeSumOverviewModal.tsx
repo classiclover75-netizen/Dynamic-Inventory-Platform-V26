@@ -218,12 +218,10 @@ export function RangeSumOverviewModal({
   const getHeaderCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLastPinned = isPinned && colId === lastPinnedColId;
-    let pinnedBg = '';
-    if (isPinned) {
-      if (colId === '__range_sum') pinnedBg = '!bg-blue-100';
-      else pinnedBg = '!bg-gray-200';
-    }
-    return `${baseCls} sticky top-0 ${isPinned ? 'z-30 ' + pinnedBg : 'z-20'} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const pinShadow = isLastPinned
+      ? 'shadow-[inset_0_0_0_1px_currentColor,4px_0_10px_-4px_rgba(0,0,0,0.15)]'
+      : 'shadow-[inset_0_0_0_1px_currentColor]';
+    return baseCls + ' sticky top-0 ' + (isPinned ? 'z-30 ' + pinShadow : 'z-20');
   };
 
   const getHeaderSty = (colId: string, width: number) => {
@@ -239,19 +237,18 @@ export function RangeSumOverviewModal({
   const getBodyCls = (colId: string, baseCls: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLastPinned = isPinned && colId === lastPinnedColId;
-    let pinnedBg = '';
-    if (isPinned) {
-      if (colId === '__range_sum') pinnedBg = '!bg-blue-100';
-      else pinnedBg = '!bg-gray-100';
-    }
-    return `${baseCls} ${isPinned ? 'sticky z-[15] ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const pinShadow = isLastPinned
+      ? 'shadow-[inset_0_0_0_1px_currentColor,4px_0_10px_-4px_rgba(0,0,0,0.15)]'
+      : 'shadow-[inset_0_0_0_1px_currentColor]';
+    return baseCls + (isPinned ? ' sticky z-[15] ' + pinShadow : '');
   };
 
   const getBodySty = (colId: string) => {
     const isPinned = pinnedCols.includes(colId);
-    return {
-      ...(isPinned ? { left: pinnedOffsets[colId] } : {})
-    };
+    let bg = '#ffffff';
+    if (colId === '__row') bg = '#f3f4f6';
+    else if (colId === '__range_sum') bg = '#eff6ff';
+    return { ...(isPinned ? { left: pinnedOffsets[colId], backgroundColor: bg } : {}) };
   };
 
 

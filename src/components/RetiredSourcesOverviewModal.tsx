@@ -462,13 +462,10 @@ export function RetiredSourcesOverviewModal({
   const getHeaderCls = (colId: string, baseClass: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLastPinned = isPinned && lastPinnedColId === colId;
-    let pinnedBg = '';
-    if (isPinned) {
-      if (colId === '__retired_source') pinnedBg = '!bg-purple-100';
-      else if (colId === '__total_sales' || colId === '__range_sum') pinnedBg = '!bg-blue-100';
-      else pinnedBg = '!bg-gray-200';
-    }
-    return `${baseClass} overflow-hidden sticky top-0 ${isPinned ? 'z-30 ' + pinnedBg : 'z-20'} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const pinShadow = isLastPinned
+      ? 'shadow-[inset_0_0_0_1px_currentColor,4px_0_10px_-4px_rgba(0,0,0,0.15)]'
+      : 'shadow-[inset_0_0_0_1px_currentColor]';
+    return baseClass + ' overflow-hidden sticky top-0 ' + (isPinned ? 'z-30 ' + pinShadow : 'z-20');
   };
   const getHeaderSty = (colId: string, width: number) => {
     const isPinned = pinnedCols.includes(colId);
@@ -478,18 +475,18 @@ export function RetiredSourcesOverviewModal({
   const getBodyCls = (colId: string, baseClass: string) => {
     const isPinned = pinnedCols.includes(colId);
     const isLastPinned = isPinned && lastPinnedColId === colId;
-    let pinnedBg = '';
-    if (isPinned) {
-      if (colId === '__retired_source') pinnedBg = '!bg-purple-100';
-      else if (colId === '__total_sales' || colId === '__range_sum') pinnedBg = '!bg-blue-100';
-      else pinnedBg = '!bg-gray-100';
-    }
-    return `${baseClass} ${isPinned ? 'sticky z-[15] ' + pinnedBg : ''} ${isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-400' : ''}`;
+    const pinShadow = isLastPinned
+      ? 'shadow-[inset_0_0_0_1px_currentColor,4px_0_10px_-4px_rgba(0,0,0,0.15)]'
+      : 'shadow-[inset_0_0_0_1px_currentColor]';
+    return baseClass + (isPinned ? ' sticky z-[15] ' + pinShadow : '');
   };
   const getBodySty = (colId: string, width: number) => {
     const isPinned = pinnedCols.includes(colId);
     const offset = pinnedOffsets[colId] ?? 0;
-    return { width: width + 'px', minWidth: width + 'px', ...(isPinned ? { left: offset + 'px' } : {}) };
+    let bg = '#ffffff';
+    if (colId === '__retired_source') bg = '#fefcff';
+    else if (colId === '__total_sales' || colId === '__range_sum') bg = '#fafcff';
+    return { width: width + 'px', minWidth: width + 'px', ...(isPinned ? { left: offset + 'px', backgroundColor: bg } : {}) };
   };
   return (
     <Modal 
