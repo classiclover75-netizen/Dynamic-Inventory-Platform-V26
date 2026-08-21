@@ -368,8 +368,8 @@ export function ActiveSourcesOverviewModal({
       });
       }); // missing filter closing
     }
-    return sortOverviewRows(result, sortBy, sortDir, columns, '_activeSourceName', 'active');
-  }, [flatRows, sourceColumns, deferredSearchQuery, selectedSources, sortBy, sortDir, columns]);
+    return sortOverviewRows(result, sortBy, sortDir, columns, '_activeSourceName', 'active', selectedKeys);
+  }, [flatRows, sourceColumns, deferredSearchQuery, selectedSources, sortBy, sortDir, columns, selectedKeys]);
 
   const handleExport = async () => {
     if (filteredRows.length === 0) {
@@ -653,6 +653,7 @@ export function ActiveSourcesOverviewModal({
                  <option value="Total Sale">Total Sale</option>
                  <option value="Total Qty">Total Qty</option>
                  <option value="Remaining Qty">Remaining Qty</option>
+                 <option value="Total Sale Range Column Sum">Total Sale Range Column Sum</option>
                  {saleCols.map((c: any) => <option key={c.key} value={c.name}>{c.name}</option>)}
                </select>
                <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')} className="px-2 py-1 rounded font-medium border bg-blue-100 hover:bg-blue-200 text-blue-900 border-blue-300" title={sortDir === 'asc' ? 'Ascending' : 'Descending'}>

@@ -50,7 +50,7 @@ export function getSourceNumericValue(row: any, colKey: string, sourceName: stri
     return 0;
 }
 
-export function sortOverviewRows(rows: any[], sortBy: string, sortDir: 'asc' | 'desc', columns: any[], sourceProp: string, statusFirst: 'retired' | 'active' = 'retired'): any[] {
+export function sortOverviewRows(rows: any[], sortBy: string, sortDir: 'asc' | 'desc', columns: any[], sourceProp: string, statusFirst: 'retired' | 'active' = 'retired', rangeKeys: Set<string> = new Set()): any[] {
     if (sortBy === 'Recently Added') {
         return sortDir === 'asc' ? [...rows] : [...rows].reverse();
     }
@@ -92,6 +92,13 @@ export function sortOverviewRows(rows: any[], sortBy: string, sortDir: 'asc' | '
         } else if (sortBy === 'Total Sale') {
             valA = a._totalSales || 0;
             valB = b._totalSales || 0;
+        } else if (sortBy === 'Total Sale Range Column Sum') {
+            valA = 0;
+            valB = 0;
+            for (const key of rangeKeys) {
+                valA += getSourceNumericValue(a, key, sourceA, false, columns);
+                valB += getSourceNumericValue(b, key, sourceB, false, columns);
+            }
         } else if (sortBy === 'Total Qty') {
             valA = a._activeQty ?? a._retiredQty ?? 0;
             valB = b._activeQty ?? b._retiredQty ?? 0;
