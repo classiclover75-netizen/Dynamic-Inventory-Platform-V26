@@ -2957,7 +2957,8 @@ app.put('/api/state', async (req, res) => {
             globalCopyBoxes: newState.globalCopyBoxes,
             globalRowNoWidth: newState.globalRowNoWidth,
             maxSearchHistory: newState.maxSearchHistory,
-            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled
+            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled,
+            pageOrder: Array.isArray(newState.pageOrder) ? newState.pageOrder : []
           }, { upsert: true });
 
           await triggerLocalBackup();
@@ -3029,7 +3030,8 @@ app.put('/api/state', async (req, res) => {
               globalCopyBoxes: newState.globalCopyBoxes,
               globalRowNoWidth: newState.globalRowNoWidth,
               maxSearchHistory: newState.maxSearchHistory,
-            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled
+              sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled,
+              pageOrder: Array.isArray(newState.pageOrder) ? newState.pageOrder : []
             }
           };
           await saveLocalDB(newDb);
@@ -3277,7 +3279,8 @@ app.post('/api/import-zip', upload.single('backup'), async (req, res) => {
           globalCopyBoxes: newState.globalCopyBoxes,
           globalRowNoWidth: newState.globalRowNoWidth,
           maxSearchHistory: newState.maxSearchHistory,
-            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled
+          sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled,
+          pageOrder: Array.isArray(newState.pageOrder) ? newState.pageOrder : []
         }, { upsert: true });
       }
       await triggerLocalBackup();
@@ -3336,7 +3339,8 @@ app.post('/api/import-zip', upload.single('backup'), async (req, res) => {
             globalCopyBoxes: newState.globalCopyBoxes,
             globalRowNoWidth: newState.globalRowNoWidth,
             maxSearchHistory: newState.maxSearchHistory,
-            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled
+            sourceSuggestionsEnabled: newState.sourceSuggestionsEnabled,
+            pageOrder: Array.isArray(newState.pageOrder) ? newState.pageOrder : []
           }
         };
         await saveLocalDB(newDb);
