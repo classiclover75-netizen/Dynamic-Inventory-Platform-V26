@@ -95,7 +95,7 @@ export function filterAndSortTrackerRows({
     }
   }
 
-  if (trackerFilter === "all" && trackerSort !== "none" && latestSaleCol) {
+  if (trackerSort !== "none" && latestSaleCol) {
     if (resultRows === rows) {
       resultRows = [...resultRows];
     }
@@ -107,7 +107,7 @@ export function filterAndSortTrackerRows({
     });
   }
 
-  if (linkedSourcePage && autoSortBySales) {
+  if (linkedSourcePage && autoSortBySales && trackerSort === "none") {
     if (latestSaleCol) {
       if (resultRows === rows) {
         resultRows = [...resultRows];

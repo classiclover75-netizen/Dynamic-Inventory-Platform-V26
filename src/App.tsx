@@ -1708,7 +1708,7 @@ function AppContent() {
       });
     }
 
-    return sortRows(rows, activeConfig.columns);
+    return (activeConfig.isTrackerPage && trackerSort !== "none") ? rows : sortRows(rows, activeConfig.columns);
   }, [
     activeRowsWithSum,
     deferredSearch,
@@ -1720,6 +1720,7 @@ function AppContent() {
     activeConfig.minStockAlert,
     trackerFilter,
     trackerSort,
+    activeFilterSaleCol,
     trackerQtySort,
   ]);
 
@@ -1776,7 +1777,7 @@ function AppContent() {
       });
     }
 
-    return sortRows(rows, secConfig.columns);
+    return (secConfig.isTrackerPage && trackerSort !== "none") ? rows : sortRows(rows, secConfig.columns);
   }, [
     state.pageRows,
     state.pageConfigs,
@@ -1785,6 +1786,7 @@ function AppContent() {
     secondarySearchTags,
     trackerFilter,
     trackerSort,
+    activeFilterSaleCol,
     trackerQtySort,
   ]);
 
