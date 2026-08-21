@@ -170,24 +170,25 @@ export const BulkApplySourceModal: React.FC<BulkApplySourceModalProps> = ({
       const globalBlob = colData.map((c) => c.val).join(" ");
 
       return activeQueries.some((query) => {
-        let targetBlob = globalBlob;
         let searchString = query.toLowerCase();
         const colonIndex = searchString.indexOf(":");
+        let scopedCol: { name: string; val: string } | null = null;
         if (colonIndex > 0) {
           const prefix = searchString.substring(0, colonIndex).trim();
           const suffix = searchString.substring(colonIndex + 1).trim();
           const matchedCol = colData.find((c) => c.name.includes(prefix) || prefix.includes(c.name));
           if (matchedCol) {
-            targetBlob = matchedCol.val;
+            scopedCol = matchedCol;
             searchString = suffix;
           }
         }
         const tokens = searchString.split(/\s+/).filter(Boolean);
         if (tokens.length === 0) return true;
-        return tokens.every((t) => {
+        const candidateCols = scopedCol ? [scopedCol] : colData;
+        return candidateCols.some((c) => tokens.every((t) => {
           const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          return new RegExp(escaped, "i").test(targetBlob);
-        });
+          return new RegExp(escaped, "i").test(c.val);
+        }));
       });
     });
   }, [rows, columns, deferredSearchQuery, decodeHtmlEntities]);

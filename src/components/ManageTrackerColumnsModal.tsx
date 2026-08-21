@@ -200,16 +200,16 @@ export const ManageTrackerColumnsModal = React.memo(({
       const globalBlob = colData.map((c) => c.val).join(" ");
       
       return activeQueries.some((query) => {
-        let targetBlob = globalBlob;
         let searchString = query.toLowerCase();
         const colonIndex = searchString.indexOf(":");
+        let scopedCol: { name: string; val: string } | null = null;
         
         if (colonIndex > 0) {
           const prefix = searchString.substring(0, colonIndex).trim();
           const suffix = searchString.substring(colonIndex + 1).trim();
           const matchedCol = colData.find((c) => c.name.includes(prefix) || prefix.includes(c.name));
           if (matchedCol) {
-            targetBlob = matchedCol.val;
+            scopedCol = matchedCol;
             searchString = suffix;
           }
         }
@@ -217,24 +217,18 @@ export const ManageTrackerColumnsModal = React.memo(({
         const tokens = searchString.split(/\s+/).filter(Boolean);
         if (tokens.length === 0) return true;
         
-        return tokens.every((t) => {
+        const buildRegex = (t: string) => {
           const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           let bStart = "";
           let bEnd = "";
-          if (/^[0-9]/.test(t)) {
-            bStart = "";
-            bEnd = "";
-          } else if (/^[a-zA-Z]/.test(t)) {
-            if (t.length <= 2) {
-              bStart = "(?<![a-zA-Z])";
-              bEnd = "(?![a-zA-Z]{2,})";
-            } else {
-              bStart = "";
-              bEnd = "";
-            }
+          if (/^[a-zA-Z]/.test(t) && t.length <= 2) {
+            bStart = "(?<![a-zA-Z])";
+            bEnd = "(?![a-zA-Z]{2,})";
           }
-          return new RegExp(bStart + escaped + bEnd, "i").test(targetBlob);
-        });
+          return new RegExp(bStart + escaped + bEnd, "i");
+        };
+        const candidateCols = scopedCol ? [scopedCol] : colData;
+        return candidateCols.some((c) => tokens.every((t) => buildRegex(t).test(c.val)));
       });
     });
   }, [sourceRows, sourceColumns, deferredSearchQuery]);
