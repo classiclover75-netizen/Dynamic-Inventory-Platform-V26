@@ -1675,21 +1675,19 @@ function AppContent() {
         const globalBlob = indexData ? indexData.globalBlob : "";
 
         return compiledQueries.some((cQuery) => {
-          let targetBlob = globalBlob;
-          let tokensToUse = cQuery.defaultTokens;
-
           if (cQuery.prefix !== null) {
             const matchedCol = colData.find(
               (c) => c.name.includes(cQuery.prefix!) || cQuery.prefix!.includes(c.name),
             );
-            if (matchedCol) {
-              targetBlob = matchedCol.val;
-              tokensToUse = cQuery.suffixTokens;
-            }
+            const targetBlob = matchedCol ? matchedCol.val : globalBlob;
+            const tokensToUse = matchedCol ? cQuery.suffixTokens : cQuery.defaultTokens;
+            if (tokensToUse.length === 0) return true;
+            return tokensToUse.every((regex) => regex.test(targetBlob));
           }
-
-          if (tokensToUse.length === 0) return true;
-          return tokensToUse.every((regex) => regex.test(targetBlob));
+          if (cQuery.defaultTokens.length === 0) return true;
+          return colData.some((c) =>
+            cQuery.defaultTokens.every((regex) => regex.test(c.val)),
+          );
         });
       });
     }
@@ -1744,21 +1742,19 @@ function AppContent() {
         const globalBlob = indexData ? indexData.globalBlob : "";
 
         return compiledQueries.some((cQuery) => {
-          let targetBlob = globalBlob;
-          let tokensToUse = cQuery.defaultTokens;
-
           if (cQuery.prefix !== null) {
             const matchedCol = colData.find(
               (c) => c.name.includes(cQuery.prefix!) || cQuery.prefix!.includes(c.name),
             );
-            if (matchedCol) {
-              targetBlob = matchedCol.val;
-              tokensToUse = cQuery.suffixTokens;
-            }
+            const targetBlob = matchedCol ? matchedCol.val : globalBlob;
+            const tokensToUse = matchedCol ? cQuery.suffixTokens : cQuery.defaultTokens;
+            if (tokensToUse.length === 0) return true;
+            return tokensToUse.every((regex) => regex.test(targetBlob));
           }
-
-          if (tokensToUse.length === 0) return true;
-          return tokensToUse.every((regex) => regex.test(targetBlob));
+          if (cQuery.defaultTokens.length === 0) return true;
+          return colData.some((c) =>
+            cQuery.defaultTokens.every((regex) => regex.test(c.val)),
+          );
         });
       });
     }
