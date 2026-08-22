@@ -430,6 +430,8 @@ async function processRowImages(row: any, forceSave = false, providedCache?: Map
             buffer = await fs.promises.readFile(path.join(UPLOADS_DIR, imgVal));
             ext = imgVal.split('.').pop() || 'jpg';
           } else if (/^https?:\/\//i.test(imgVal)) {
+            const isSafeUrl = await validateUrlForSSRF(imgVal);
+            if (!isSafeUrl) throw new Error('Image URL is not allowed');
             const response = await fetch(imgVal);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const arrayBuffer = await response.arrayBuffer();
