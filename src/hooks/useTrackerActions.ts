@@ -122,7 +122,7 @@ export function useTrackerActions(deps: {
 
     const filteredColumns = selectedColKeys
       ? sourceConfig.columns.filter(
-          (c) => selectedColKeys.includes(c.key) || c.key === "sr",
+          (c: any) => selectedColKeys.includes(c.key) || c.key === "sr",
         )
       : sourceConfig.columns;
 
@@ -154,7 +154,7 @@ export function useTrackerActions(deps: {
     };
 
     // EXACT COPY of ALL row data, setting total_qty to '0'
-    const newRows = sourceRows.map((row) => {
+    const newRows = sourceRows.map((row: any) => {
       const newRow = { ...row };
       if (selectedColKeys) {
         Object.keys(newRow).forEach((k) => {
@@ -207,7 +207,7 @@ export function useTrackerActions(deps: {
     const newColKey = "sale_" + Date.now();
     
     const sourcesSet = new Set<string>();
-    activeRows.forEach(row => {
+    activeRows.forEach((row: any) => {
       const rawTotal = String(row.total_qty || "0");
       if (rawTotal.trim().startsWith("[")) {
         try {
@@ -229,11 +229,11 @@ export function useTrackerActions(deps: {
     };
 
     // Find where to insert the new column (before existing sale columns)
-    const currentColumns = activeConfig.columns.map((c) =>
+    const currentColumns = activeConfig.columns.map((c: any) =>
       c.type === "sale_tracker" ? { ...c, archived: true } : c,
     );
     const firstSaleIndex = activeConfig.columns.findIndex(
-      (c) => c.type === "sale_tracker",
+      (c: any) => c.type === "sale_tracker",
     );
 
     if (firstSaleIndex !== -1) {
@@ -246,7 +246,7 @@ export function useTrackerActions(deps: {
 
     try {
       await savePageConfig(state.activePage, updatedConfig);
-      setState((prev) => ({
+      setState((prev: any) => ({
         ...prev,
         pageConfigs: { ...prev.pageConfigs, [state.activePage]: updatedConfig },
       }));
@@ -266,12 +266,12 @@ export function useTrackerActions(deps: {
 
     const colKeysSet = new Set(colKeys);
     const updatedColumns = activeConfig.columns.filter(
-      (c) => !colKeysSet.has(c.key),
+      (c: any) => !colKeysSet.has(c.key),
     );
 
     const newConfig = { ...activeConfig, columns: updatedColumns };
 
-    const updatedRows = activeRows.map((row) => {
+    const updatedRows = activeRows.map((row: any) => {
       const newRow = { ...row };
       if (deleteType === "smart") {
         const rawTotal = String(row.total_qty || "");
@@ -355,10 +355,10 @@ export function useTrackerActions(deps: {
     const newlyAddedKeys = newSourceColKeys.filter((k: string) => !currentTrackerColKeys.has(k) && k !== "sr");
     const removedKeys = sourceConfig.columns.map((c: any) => c.key).filter((k: string) => !newSourceColKeys.includes(k) && currentTrackerColKeys.has(k) && k !== "sr");
     
-    const sourceRowMap = new Map(sourceRows.map((r: any) => [r.id, r]));
+    const sourceRowMap = new Map<string, any>(sourceRows.map((r: any) => [r.id, r]));
     const updatedTrackerRows = activeRows.map((row: any) => {
       const sourceRow = sourceRowMap.get(row.id);
-      const newRow = { ...row };
+      const newRow: any = { ...row };
       
       for (const key of newlyAddedKeys) {
         if (sourceRow && sourceRow[key] !== undefined) {

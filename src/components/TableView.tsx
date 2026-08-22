@@ -166,7 +166,7 @@ export const TableView = ({
       : state.activePage;
 
     const isTableSorted = config.columns.some(
-      (col) => col.sortEnabled && col.sortPriority && col.sortPriority > 0,
+      (col: any) => col.sortEnabled && col.sortPriority && col.sortPriority > 0,
     );
     const hasAnyExplicitPinned = config.columns.some((col: any) => col.pinned);
     const visibleColumns = config.columns.filter(
@@ -231,9 +231,9 @@ export const TableView = ({
       (hasRowReorder ? 1 : 0) + 1;
 
     const colTokensMap: Record<string, string[]> = {};
-    visibleColumns.forEach((col) => {
+    visibleColumns.forEach((col: any) => {
       let tokens: string[] = [];
-      queries.forEach((query) => {
+      queries.forEach((query: string) => {
         const qLower = query.toLowerCase();
         const colonIndex = qLower.indexOf(":");
         if (colonIndex > 0) {
@@ -321,10 +321,10 @@ export const TableView = ({
                   >
                   </th>
                 )}
-                {visibleColumns.map((col, i) => {
+                {visibleColumns.map((col: any, i: number) => {
                   const header = flatHeadersMap.get(col.key) || currentTable
                     .getFlatHeaders()
-                    .find((h) => h.id === col.key);
+                    .find((h: any) => h.id === col.key);
                   const isResizing = header?.column?.getIsResizing();
                   const activeWidth = header
                     ? header.getSize()
@@ -446,7 +446,7 @@ export const TableView = ({
                           />
                         </tr>
                       )}
-                      {virtualItems.map((virtualItem) => {
+                      {virtualItems.map((virtualItem: any) => {
                         const rowIndex = virtualItem.index;
                         const row = rows[rowIndex];
                         const isActiveRow = !(
@@ -492,10 +492,10 @@ export const TableView = ({
                                     </div>
                                   </td>
                                 )}
-                                {visibleColumns.map((col, colIndex) => {
+                                {visibleColumns.map((col: any, colIndex: number) => {
                                   const header = flatHeadersMap.get(col.key) || currentTable
                                     .getFlatHeaders()
-                                    .find((h) => h.id === col.key);
+                                    .find((h: any) => h.id === col.key);
                                   const activeWidth = header
                                     ? header.getSize()
                                     : col.width ||
@@ -547,7 +547,7 @@ export const TableView = ({
                                             {isTableSorted
                                               ? rowIndex + 1
                                               : originalRows.findIndex(
-                                                  (r) => r.id === row.id,
+                                                  (r: any) => r.id === row.id,
                                                 ) + 1}
                                             .
                                           </span>
@@ -847,14 +847,14 @@ export const TableView = ({
                                         row.total_qty,
                                       );
                                       const saleCols = config.columns.filter(
-                                        (c) => c.type === "sale_tracker",
+                                        (c: any) => c.type === "sale_tracker",
                                       );
 
                                       const { active: activeTotalSources } = splitActiveRetired(totalSources);
                                       const remainingSources = activeTotalSources.map(
                                         (ts: any) => {
                                           let totalSaleForSource = 0;
-                                          saleCols.forEach((sc) => {
+                                          saleCols.forEach((sc: any) => {
                                             const sales = parseMultiSource(
                                               row[sc.key],
                                             );
@@ -1132,7 +1132,7 @@ export const TableView = ({
                                                               } else {
                                                                 copy.push({ source: ts.source, qty: newVal, color: ts.color });
                                                               }
-                                                              setInlineEdit((prev) => ({ ...prev!, val: JSON.stringify(copy) }));
+                                                              setInlineEdit((prev: any) => ({ ...prev!, val: JSON.stringify(copy) }));
                                                             }}
                                                             onWheel={(e) => e.currentTarget.blur()}
                                                             onFocus={(e) => {

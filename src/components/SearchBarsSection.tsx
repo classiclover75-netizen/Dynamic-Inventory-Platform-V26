@@ -65,7 +65,7 @@ export const SearchBarsSection = ({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPageSearchQueries((prev) =>
+      setPageSearchQueries((prev: Record<string, string>) =>
         prev[activePage] === primarySearchInput
           ? prev
           : { ...prev, [activePage]: primarySearchInput },
@@ -78,7 +78,7 @@ export const SearchBarsSection = ({
     const timer = setTimeout(() => {
       setSecondarySearchQuery(secondarySearchInput);
       if (activeSecPage)
-        setPageSearchQueries((prev) =>
+        setPageSearchQueries((prev: Record<string, string>) =>
           prev[activeSecPage] === secondarySearchInput
             ? prev
             : { ...prev, [activeSecPage]: secondarySearchInput },
@@ -180,24 +180,24 @@ export const SearchBarsSection = ({
 
   const handleAddPrimaryTag = () => {
     if (primarySearchInput.trim()) {
-      setPrimarySearchTags((prev) => [...prev, primarySearchInput.trim()]);
+      setPrimarySearchTags((prev: string[]) => [...prev, primarySearchInput.trim()]);
       setPrimarySearchInput("");
     }
   };
 
   const handleRemovePrimaryTag = (index: number) => {
-    setPrimarySearchTags((prev) => prev.filter((_, i) => i !== index));
+    setPrimarySearchTags((prev: string[]) => prev.filter((_: string, i: number) => i !== index));
   };
 
   const handleAddSecondaryTag = () => {
     if (secondarySearchInput.trim()) {
-      setSecondarySearchTags((prev) => [...prev, secondarySearchInput.trim()]);
+      setSecondarySearchTags((prev: string[]) => [...prev, secondarySearchInput.trim()]);
       setSecondarySearchInput("");
     }
   };
 
   const handleRemoveSecondaryTag = (index: number) => {
-    setSecondarySearchTags((prev) => prev.filter((_, i) => i !== index));
+    setSecondarySearchTags((prev: string[]) => prev.filter((_: string, i: number) => i !== index));
   };
 
   const handlePrimKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -206,7 +206,7 @@ export const SearchBarsSection = ({
       handleAddPrimaryTag();
     }
     if (e.key === "Backspace" && primarySearchInput === "")
-      setPrimarySearchTags((prev) => prev.slice(0, -1));
+      setPrimarySearchTags((prev: string[]) => prev.slice(0, -1));
     if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
       e.preventDefault();
       e.shiftKey ? handlePrimRedo() : handlePrimUndo();
@@ -223,7 +223,7 @@ export const SearchBarsSection = ({
       handleAddSecondaryTag();
     }
     if (e.key === "Backspace" && secondarySearchInput === "")
-      setSecondarySearchTags((prev) => prev.slice(0, -1));
+      setSecondarySearchTags((prev: string[]) => prev.slice(0, -1));
     if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
       e.preventDefault();
       e.shiftKey ? handleSecRedo() : handleSecUndo();
@@ -253,13 +253,13 @@ export const SearchBarsSection = ({
   return (
       <div className="bg-white border border-[#d8d8d8] rounded-md p-2 flex flex-col md:flex-row gap-2">
         {(activeConfig.searchBarOrder || ["primary", "secondary"]).map(
-          (type) => {
+          (type: string) => {
             if (type === "primary") {
               return (
                 <div key="primary" className="flex items-center gap-2 flex-1">
                   <div className="relative flex-1 flex items-center gap-1 border-2 border-[#217346] rounded px-1 min-w-0 bg-white">
                     <div className="flex flex-wrap gap-1 max-w-[60%] overflow-hidden">
-                      {primarySearchTags.map((tag, idx) => (
+                      {primarySearchTags.map((tag: string, idx: number) => (
                         <span
                           key={idx}
                           className="flex items-center gap-1 bg-green-100 text-[#217346] text-[11px] font-bold px-2 py-0.5 rounded-full border border-green-200 whitespace-nowrap"
@@ -394,7 +394,7 @@ export const SearchBarsSection = ({
                 <div key="secondary" className="flex items-center gap-2 flex-1">
                   <div className="relative flex-1 flex items-center gap-1 border-2 border-[#2b579a] rounded px-1 min-w-0 bg-white">
                     <div className="flex flex-wrap gap-1 max-w-[60%] overflow-hidden">
-                      {secondarySearchTags.map((tag, idx) => (
+                      {secondarySearchTags.map((tag: string, idx: number) => (
                         <span
                           key={idx}
                           className="flex items-center gap-1 bg-blue-100 text-[#2b579a] text-[11px] font-bold px-2 py-0.5 rounded-full border border-blue-200 whitespace-nowrap"

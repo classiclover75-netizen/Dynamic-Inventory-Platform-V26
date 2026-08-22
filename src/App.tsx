@@ -1672,7 +1672,7 @@ function AppContent() {
       
       rows = rows.filter((row) => {
         const indexData = primarySearchIndex.get(row.id);
-        const colData = indexData ? indexData.colData : [];
+        const colData: { name: string; val: string }[] = indexData ? indexData.colData : [];
         const globalBlob = indexData ? indexData.globalBlob : "";
 
         return compiledQueries.some((cQuery) => {
@@ -1739,7 +1739,7 @@ function AppContent() {
       
       rows = rows.filter((row) => {
         const indexData = secondarySearchIndex.get(row.id);
-        const colData = indexData ? indexData.colData : [];
+        const colData: { name: string; val: string }[] = indexData ? indexData.colData : [];
         const globalBlob = indexData ? indexData.globalBlob : "";
 
         return compiledQueries.some((cQuery) => {

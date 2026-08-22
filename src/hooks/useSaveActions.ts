@@ -28,7 +28,7 @@ export function useSaveActions(deps: {
     try {
       await savePageConfig(state.activePage, config);
 
-      setState((prev) => ({
+      setState((prev: any) => ({
         ...prev,
         pageConfigs: {
           ...prev.pageConfigs,
@@ -119,7 +119,7 @@ export function useSaveActions(deps: {
       }
 
       // Success! Update state
-      setState((prev) => ({
+      setState((prev: any) => ({
         ...prev,
         pageRows: {
           ...prev.pageRows,
@@ -169,8 +169,8 @@ export function useSaveActions(deps: {
               "total_qty",
               "remaining_qty",
               ...trackerConfig.columns
-                .filter((c) => c.type === "sale_tracker")
-                .map((c) => c.key),
+                .filter((c: any) => c.type === "sale_tracker")
+                .map((c: any) => c.key),
             ];
             const preservedData: any = {};
             for (const k of trackerKeysToKeep)
@@ -201,7 +201,7 @@ export function useSaveActions(deps: {
         }
 
         if (updatedTracker) {
-          setState((prev) => ({
+          setState((prev: any) => ({
             ...prev,
             pageRows: { ...prev.pageRows, [trackerName]: trackerRows },
           }));
