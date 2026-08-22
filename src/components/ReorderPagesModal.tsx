@@ -15,7 +15,7 @@ export const ReorderPagesModal = React.memo(({
   onClose,
   pages,
   onReorder,
-}) => {
+}: ReorderPagesModalProps) => {
   const [localPages, setLocalPages] = useState<string[]>(pages);
 
   useEffect(() => {

@@ -21,7 +21,7 @@ export const ReorderSearchBarsModal = React.memo(({
   activePageName,
   secondaryPageName,
   onReorder,
-}) => {
+}: ReorderSearchBarsModalProps) => {
   const [localOrder, setLocalOrder] = useState<('primary' | 'secondary')[]>(order);
 
   useEffect(() => {

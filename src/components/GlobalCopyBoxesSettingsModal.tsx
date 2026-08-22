@@ -16,7 +16,7 @@ export const GlobalCopyBoxesSettingsModal = React.memo(({
   onClose,
   state,
   onSave
-}) => {
+}: GlobalCopyBoxesSettingsModalProps) => {
   const [settings, setSettings] = useState<GlobalCopyBoxesSettings>({
     enabled: true,
     box1: { sourcePage: '', sourceColumn: '' },

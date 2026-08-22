@@ -20,7 +20,7 @@ export const DuplicateFinderModal = React.memo(({
   rows,
   columns,
   onDeleteRow,
-}) => {
+}: DuplicateFinderModalProps) => {
   // Find duplicates by comparing all data values in a row (excluding system keys)
   const duplicateGroups = useMemo(() => {
     if (!isOpen || !rows || rows.length === 0) return [];
