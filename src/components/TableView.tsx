@@ -15,7 +15,7 @@ import { isLocked, toggleLockInTotalQty } from '../lib/sourceLockUtils';
 import { resolveChipRender, resolveBorderAccent } from '../lib/colorRender';
 import { getCreationTooltip } from '../lib/sourceTimestamp';
 import { ColorPickerPopover } from './ColorPickerPopover';
-import { getRowColor, resolveRowColorStyle } from '../lib/rowCellColor';
+import { getRowColor, resolveColorValueStyle, resolveRowColorStyle } from '../lib/rowCellColor';
 
 export const TableView = ({
   activeFilterSaleCol,
@@ -41,6 +41,7 @@ export const TableView = ({
   const [containerWidth, setContainerWidth] = React.useState<number | null>(null);
   const [openRetiredPickerRowId, setOpenRetiredPickerRowId] = React.useState<string | null>(null);
   const [adderOpenCellId, setAdderOpenCellId] = React.useState<string | null>(null);
+  const [rowColorPreview, setRowColorPreview] = React.useState<{ rowId: string; color: string } | null>(null);
   const currentSaleKey = React.useMemo(() => getCurrentSaleColumnKey(config?.columns || []), [config?.columns]);
   React.useEffect(() => {
     const parentRef = isSecondary ? secParentRef : primParentRef;
@@ -458,7 +459,13 @@ export const TableView = ({
                         const isRowEditing = inlineEdit?.id?.startsWith(
                           String(row.id) + "-",
                         );
-                        const rowColorStyle = resolveRowColorStyle(row);
+                        const rowPreviewColor =
+                          rowColorPreview && rowColorPreview.rowId === String(row.id)
+                            ? rowColorPreview.color
+                            : null;
+                        const rowColorStyle = rowPreviewColor
+                          ? resolveColorValueStyle(rowPreviewColor)
+                          : resolveRowColorStyle(row);
                         const rowIsSelected = !isSecondary && selectedRowIds.has(row.id);
                         const rowPageName = isSecondary
                           ? activeConfig.secondarySearchPage
@@ -590,8 +597,10 @@ export const TableView = ({
                                                 hideSwatch={true}
                                                 forceIconVisible={true}
                                                 label="Change row colour"
+                                                onChange={(val) => setRowColorPreview({ rowId: String(row.id), color: val.chipClass })}
                                                 onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
                                                 onReset={() => onClearRowColor(rowPageName, row.id)}
+                                                onClose={() => setRowColorPreview(null)}
                                                 className="shrink-0"
                                               />
                                             </span>

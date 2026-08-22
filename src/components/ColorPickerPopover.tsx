@@ -10,6 +10,7 @@ interface ColorPickerPopoverProps {
   onChange?: (val: ColorPickerValue) => void;
   onCommit?: (val: ColorPickerValue) => void;
   onReset?: () => void;
+  onClose?: () => void;
   disabled?: boolean;
   label?: string;
   forceIconVisible?: boolean;
@@ -55,6 +56,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
       onChange,
   onCommit,
   onReset,
+  onClose,
   disabled = false,
   label = "Change colour",
   forceIconVisible = false,
@@ -78,8 +80,11 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     if (isOpen && !wasOpen.current) {
       setOpenCount(c => c + 1);
     }
+    if (!isOpen && wasOpen.current && onClose) {
+      onClose();
+    }
     wasOpen.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   const canHover = useCanHover();
 

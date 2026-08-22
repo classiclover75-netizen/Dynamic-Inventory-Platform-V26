@@ -14,7 +14,12 @@ export function getRowColor(row: any): string | null {
 }
 
 export function resolveRowColorStyle(row: any): CSSProperties | null {
-  const value = getRowColor(row);
+  return resolveColorValueStyle(getRowColor(row));
+}
+
+export function resolveColorValueStyle(
+  value: string | null | undefined,
+): CSSProperties | null {
   if (!value) return null;
   if (isCustomColor(value)) {
     const parsed = parseCustomColor(value);
