@@ -524,8 +524,19 @@ export const TableView = ({
                                   const pinnedBgClass = isPinned ? (!isSecondary && selectedRowIds.has(row.id) ? 'bg-[#e8f0fe]' : 'bg-white') : '';
                                   const pinnedShadowClass = isLastPinned ? 'shadow-[4px_0_10px_-4px_rgba(0,0,0,0.15)] border-r-gray-300' : '';
 
+                                  const hoverBgClasses = rowColorStyle
+                                    ? ""
+                                    : "data-[hovered-col=true]:bg-[#f0f7ff] data-[hovered-row=true]:bg-[#e8f0fe] data-[hovered-exact=true]:!bg-[#d2e3fc] ";
+                                  const hoverRingClass = rowColorStyle
+                                    ? "data-[hovered-exact=true]:!shadow-[inset_0_0_0_3px_#2b579a,inset_0_2px_4px_0_rgba(0,0,0,0.05)] "
+                                    : "data-[hovered-exact=true]:shadow-[inset_0_0_0_3px_#2b579a,inset_0_2px_4px_0_rgba(0,0,0,0.05)] ";
                                   const hoverClass =
-                                    `data-[hovered-col=true]:bg-[#f0f7ff] data-[hovered-row=true]:bg-[#e8f0fe] data-[hovered-exact=true]:!bg-[#d2e3fc] data-[hovered-exact=true]:shadow-[inset_0_0_0_3px_#2b579a,inset_0_2px_4px_0_rgba(0,0,0,0.05)] data-[hovered-exact=true]:relative data-[hovered-exact=true]:z-10 ${pinnedBgClass} ${pinnedShadowClass}`;
+                                    hoverBgClasses +
+                                    hoverRingClass +
+                                    "data-[hovered-exact=true]:relative data-[hovered-exact=true]:z-10 " +
+                                    (rowColorStyle ? "" : pinnedBgClass) +
+                                    " " +
+                                    pinnedShadowClass;
 
                                   const colTokens = isActiveRow
                                     ? colTokensMap[col.key] || []
@@ -932,7 +943,7 @@ export const TableView = ({
                                               }
                                             )}
                                             {totalSources.length >= 2 && (
-                                              <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
+                                              <div className={"mt-1 pt-1 border-t border-gray-200 font-extrabold text-[15px] flex items-center justify-between w-full px-1 " + (rowColorStyle ? "" : "text-gray-900")}>
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
                                                 <span>{highlightText(String(remainingSources.reduce((sum, s) => sum + (Number(s.remaining) || 0), 0)), colTokens, isGhost)}</span>
                                               </div>
@@ -996,7 +1007,7 @@ export const TableView = ({
                                               }
                                             )}
                                             {totalSources.length >= 2 && (
-                                              <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1">
+                                              <div className={"mt-1 pt-1 border-t border-gray-200 font-extrabold text-[15px] flex items-center justify-between w-full px-1 " + (rowColorStyle ? "" : "text-gray-900")}>
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
                                                 <span>{highlightText(sumActive(totalSources), colTokens, isGhost)}</span>
                                               </div>
@@ -1206,7 +1217,7 @@ export const TableView = ({
                                               }
                                             )}
                                             {totalSources.length >= 2 && (
-                                              <div className="mt-1 pt-1 border-t border-gray-200 text-gray-900 font-extrabold text-[15px] flex items-center justify-between w-full px-1.5">
+                                              <div className={"mt-1 pt-1 border-t border-gray-200 font-extrabold text-[15px] flex items-center justify-between w-full px-1.5 " + (rowColorStyle ? "" : "text-gray-900")}>
                                                 <span className="opacity-50 text-[11px] uppercase tracking-wider">Total</span>
                                                 <span>{highlightText(String(totalSources.reduce((sum, ts) => {
                                                     const currentSaleEntry = draftVal.find((s) => s.source === ts.source);
