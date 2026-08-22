@@ -694,6 +694,7 @@ function AppContent() {
       globalCopyBoxesSettings: false,
       bulkApplySource: false,
       manageTrackerColumns: false,
+      relinkTracker: false,
     });
     setEditingRowId(null);
     setEditingPageName(null);

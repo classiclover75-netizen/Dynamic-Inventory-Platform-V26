@@ -577,8 +577,8 @@ export const ActivePageSettingsModal = React.memo(({
                     )}
                     <div className="flex items-center gap-1.5">
                       <b>{c.name}</b> <span className="text-[#607d8b]">({c.type})</span>
-                      {c.sortEnabled && c.key !== 'sr' && <ArrowUpDown size={14} className="text-blue-500" title="Sorting Enabled" />}
-                      {c.sortLocked && c.key !== 'sr' && <Lock size={14} className="text-gray-500" title="Sorting Locked" />}
+                      {c.sortEnabled && c.key !== 'sr' && <span title="Sorting Enabled" className="inline-flex"><ArrowUpDown size={14} className="text-blue-500" /></span>}
+                      {c.sortLocked && c.key !== 'sr' && <span title="Sorting Locked" className="inline-flex"><Lock size={14} className="text-gray-500" /></span>}
                       {c.sortPriority && c.key !== 'sr' && <span className="text-[10px] font-bold px-1 rounded bg-blue-100 text-blue-700" title={`Priority ${c.sortPriority}`}>P{c.sortPriority}</span>}
                       {c.locked && ' • Locked'}
                       {c.type === 'text_with_copy_button' && ' • Multi input + per-item copy'}
@@ -756,8 +756,8 @@ export const ActivePageSettingsModal = React.memo(({
                             )}
                             <div className="flex items-center gap-1.5">
                               <b>{c.name}</b> <span className="text-[#607d8b]">({c.type})</span>
-                              {c.sortEnabled && c.key !== 'sr' && <ArrowUpDown size={14} className="text-blue-500" title="Sorting Enabled" />}
-                              {c.sortLocked && c.key !== 'sr' && <Lock size={14} className="text-gray-500" title="Sorting Locked" />}
+                              {c.sortEnabled && c.key !== 'sr' && <span title="Sorting Enabled" className="inline-flex"><ArrowUpDown size={14} className="text-blue-500" /></span>}
+                              {c.sortLocked && c.key !== 'sr' && <span title="Sorting Locked" className="inline-flex"><Lock size={14} className="text-gray-500" /></span>}
                               {c.sortPriority && c.key !== 'sr' && <span className="text-[10px] font-bold px-1 rounded bg-blue-100 text-blue-700" title={`Priority ${c.sortPriority}`}>P{c.sortPriority}</span>}
                               {c.locked && ' • Locked'}
                               {c.type === 'text_with_copy_button' && ' • Multi input + per-item copy'}

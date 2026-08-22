@@ -78,7 +78,6 @@ export const RetiredSourcesModal: React.FC<RetiredSourcesModalProps> = ({
                   </div>
                   <Button 
                     variant="outline" 
-                    size="sm"
                     className="h-7 text-[11px] flex items-center gap-1 border-purple-200 text-purple-700 hover:bg-purple-100 px-2"
                     onClick={() => {
                       onUnretire(src.source);

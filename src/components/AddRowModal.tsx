@@ -110,7 +110,7 @@ const RichTextEditor = ({
     e.preventDefault();
     const html = e.clipboardData.getData("text/html");
     const text = e.clipboardData.getData("text/plain");
-    const isPlainPaste = e.shiftKey || !html;
+    const isPlainPaste = !html;
 
     if (!isPlainPaste) {
       document.execCommand("insertHTML", false, html);
@@ -935,7 +935,6 @@ export const AddRowModal = React.memo(
                                       <Button
                                         type="button"
                                         variant="ghost"
-                                        size="sm"
                                         className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200"
                                         onClick={() => setRetiredModalRowIndex(i)}
                                       >

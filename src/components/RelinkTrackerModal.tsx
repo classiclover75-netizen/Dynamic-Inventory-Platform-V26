@@ -111,11 +111,11 @@ export function RelinkTrackerModal({
         )}
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button 
-            variant="primary" 
+            variant="blue" 
             onClick={handleConfirm} 
             disabled={!selectedSource || isSaving || eligibleSources.length === 0}
           >
