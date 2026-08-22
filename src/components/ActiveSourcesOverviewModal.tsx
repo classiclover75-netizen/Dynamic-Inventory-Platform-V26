@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useDeferredValue } from 'react';
 import ExcelJS from 'exceljs';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
+import { resolveRowColorStyle } from '../lib/rowCellColor';
 import { saveAs } from 'file-saver';
 import { Search, FileSpreadsheet } from 'lucide-react';
 import { buildFlatActiveRows, buildActiveOverview, FlatActiveRow } from '../lib/activeOverviewUtils';
@@ -493,14 +494,22 @@ export function ActiveSourcesOverviewModal({
       : 'shadow-[inset_0_0_0_1px_currentColor]';
     return baseClass + (isPinned ? ' sticky z-[15] ' + pinShadow : '');
   };
-  const getBodySty = (colId: string, width: number) => {
+  const getBodySty = (colId: string, width: number, rowStyle?: React.CSSProperties) => {
     const isPinned = pinnedCols.includes(colId);
     const offset = pinnedOffsets[colId] ?? 0;
     let bg = '#ffffff';
     if (colId === '__active_source') bg = '#fefcff';
     else if (colId === '__total_sales' || colId === '__range_sum') bg = '#fafcff';
-    return { width: width + 'px', minWidth: width + 'px', ...(isPinned ? { left: offset + 'px', backgroundColor: bg } : {}) };
+    return { width: width + 'px', minWidth: width + 'px', ...(isPinned ? { left: offset + 'px', backgroundColor: bg } : {}), ...(rowStyle || {}) };
   };
+
+  const rowColorById = useMemo(() => {
+    const map = new Map<string, React.CSSProperties | null>();
+    (rows || []).forEach((r: any) => {
+      if (r && r.id !== undefined) map.set(String(r.id), resolveRowColorStyle(r));
+    });
+    return map;
+  }, [rows]);
   return (
     <Modal 
       isOpen={isOpen} 
@@ -775,9 +784,15 @@ export function ActiveSourcesOverviewModal({
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row, i) => (
-                <tr key={`${row._originalRowId}-${row._activeSourceName}-${i}`} className="hover:bg-gray-50">
-                  <td className={getBodyCls('__active_source', "p-2 border whitespace-pre-wrap break-words font-bold text-purple-700 bg-purple-50/30")} style={getBodySty('__active_source', getColWidth('__active_source'))}>
+              {filteredRows.map((row, i) => {
+                const rowColorStyle = rowColorById.get(String(row._originalRowId)) || null;
+                const sourceCls = rowColorStyle ? "p-2 border whitespace-pre-wrap break-words font-bold" : "p-2 border whitespace-pre-wrap break-words font-bold text-purple-700 bg-purple-50/30";
+                const salesCls = rowColorStyle ? "p-2 border whitespace-pre-wrap break-words font-bold" : "p-2 border whitespace-pre-wrap break-words font-bold text-blue-700 bg-blue-50/30";
+                const dataCls = rowColorStyle ? "p-2 border whitespace-pre-wrap break-words" : "p-2 border whitespace-pre-wrap break-words bg-white";
+                const qtyCls = rowColorStyle ? "text-[10px] uppercase mt-0.5 tracking-wider" : "text-[10px] text-gray-500 uppercase mt-0.5 tracking-wider";
+                return (
+                <tr key={`${row._originalRowId}-${row._activeSourceName}-${i}`} className={rowColorStyle ? "" : "hover:bg-gray-50"}>
+                  <td className={getBodyCls('__active_source', sourceCls)} style={getBodySty('__active_source', getColWidth('__active_source'), rowColorStyle || undefined)}>
                     <div className="flex items-center gap-1">
                       {(() => {
                         const render = row._activeSourceColor ? resolveChipRender(row._activeSourceColor) : null;
@@ -793,12 +808,12 @@ export function ActiveSourcesOverviewModal({
                       {row._isLocked && <span className="text-[10px]">🔒</span>}
                       {showAllStatuses && row._isRetired && <span className="text-xs font-semibold text-red-700 bg-red-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">(retired)</span>}
                     </div>
-                    <div className="text-[10px] text-gray-500 uppercase mt-0.5 tracking-wider">Qty: {row._activeQty}</div>
+                    <div className={qtyCls}>Qty: {row._activeQty}</div>
                   </td>
-                  <td className={getBodyCls('__total_sales', "p-2 border whitespace-pre-wrap break-words font-bold text-blue-700 bg-blue-50/30")} style={getBodySty('__total_sales', getColWidth('__total_sales'))}>
+                  <td className={getBodyCls('__total_sales', salesCls)} style={getBodySty('__total_sales', getColWidth('__total_sales'), rowColorStyle || undefined)}>
                     {highlightText(String(row._totalSales), deferredSearchQuery)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-2 border whitespace-pre-wrap break-words font-bold text-blue-700 bg-blue-50/30")} style={getBodySty('__range_sum', getColWidth('__range_sum'))}>
+                  <td className={getBodyCls('__range_sum', salesCls)} style={getBodySty('__range_sum', getColWidth('__range_sum'), rowColorStyle || undefined)}>
                     {(() => {
                       if (selectedKeys.size === 0) return "0";
                       let sum = 0;
@@ -816,8 +831,8 @@ export function ActiveSourcesOverviewModal({
                     return (
                       <td
                         key={c.key}
-                        className={getBodyCls(c.key, "p-2 border whitespace-pre-wrap break-words bg-white")}
-                        style={getBodySty(c.key, getColWidth(c.key))}
+                        className={getBodyCls(c.key, dataCls)}
+                        style={getBodySty(c.key, getColWidth(c.key), rowColorStyle || undefined)}
                       >
                         {(c.type === "image" || c.type === "file") &&
                         rawVal &&
@@ -853,7 +868,8 @@ export function ActiveSourcesOverviewModal({
                     );
                   })}
                 </tr>
-              ))}
+                );
+              })}
               {filteredRows.length === 0 && (
                 <tr>
                   <td

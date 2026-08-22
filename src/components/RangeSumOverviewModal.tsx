@@ -12,6 +12,7 @@ import { computeRemainingQtyBreakdown } from '../lib/rangeSumRemainingQty';
 import { isLocked } from '../lib/sourceLockUtils';
 import { resolveChipRender } from '../lib/colorRender';
 import { formatCellDisplay } from '../lib/formatCellDisplay';
+import { resolveRowColorStyle } from '../lib/rowCellColor';
 import { Column, RowData } from '../types';
 import { useOverviewColumnPin } from '../hooks/useOverviewColumnPin';
 import { OverviewColumnResizeHandle } from './OverviewColumnResizeHandle';
@@ -251,12 +252,12 @@ export function RangeSumOverviewModal({
     return baseCls + (isPinned ? ' sticky z-[15] ' + pinShadow : '');
   };
 
-  const getBodySty = (colId: string) => {
+  const getBodySty = (colId: string, rowStyle?: React.CSSProperties) => {
     const isPinned = pinnedCols.includes(colId);
     let bg = '#ffffff';
     if (colId === '__row') bg = '#f3f4f6';
     else if (colId === '__range_sum') bg = '#eff6ff';
-    return { ...(isPinned ? { left: pinnedOffsets[colId], backgroundColor: bg } : {}) };
+    return { ...(isPinned ? { left: pinnedOffsets[colId], backgroundColor: bg } : {}), ...(rowStyle || {}) };
   };
 
 
@@ -833,7 +834,7 @@ export function RangeSumOverviewModal({
                     if (c.type === "image" || c.type === "file") {
                       const imgUrl = getImageUrl(row[c.key]);
                       return (
-                        <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key)}>
+                        <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top text-center")} style={getBodySty(c.key, rowColorStyle || undefined)}>
                           {imgUrl ? (
                             <img src={imgUrl} alt="" className={`w-10 h-10 object-contain mx-auto ${onImageClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`} onClick={() => onImageClick?.(row.id, c.key)} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                           ) : null}
@@ -845,16 +846,16 @@ export function RangeSumOverviewModal({
                       const remainingSources = computeRemainingQtyBreakdown(row, saleCols, minStockAlert);
                       
                       return (
-                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
-                          {renderMultiSourceCell(JSON.stringify(remainingSources), 'bg-white', 'text-gray-900', 'border-gray-200', false)}
+                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key, rowColorStyle || undefined)}>
+                          {renderMultiSourceCell(JSON.stringify(remainingSources), innerBgClass, cellTextClass, 'border-gray-200', false)}
                         </td>
                       );
                     }
 
                     if (c.type === "sale_tracker" || c.key === "total_qty") {
                       return (
-                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key)}>
-                          {renderMultiSourceCell(row[c.key], 'bg-white', 'text-gray-900', 'border-gray-200', c.key === 'total_qty')}
+                        <td key={c.key} className={getBodyCls(c.key, "p-0 border align-top")} style={getBodySty(c.key, rowColorStyle || undefined)}>
+                          {renderMultiSourceCell(row[c.key], innerBgClass, cellTextClass, 'border-gray-200', c.key === 'total_qty')}
                         </td>
                       );
                     }
@@ -862,7 +863,7 @@ export function RangeSumOverviewModal({
                     const rawVal = row[c.key];
                     const strVal = formatCellDisplay(rawVal);
                     return (
-                       <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top break-words")} style={getBodySty(c.key)}>
+                       <td key={c.key} className={getBodyCls(c.key, "p-2 border align-top break-words")} style={getBodySty(c.key, rowColorStyle || undefined)}>
                          <div className="flex items-center gap-1 flex-wrap">
                            {highlightText(strVal, deferredSearchQuery)}
                          </div>
