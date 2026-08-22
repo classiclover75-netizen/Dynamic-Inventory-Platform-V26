@@ -1,5 +1,6 @@
 import { backfillThumbnails } from './src/server/backfillThumbnails';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -103,6 +104,23 @@ function deleteImageFile(filename: string) {
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down and try again shortly.' }
+});
+app.use('/api', apiLimiter);
+
+const heavyLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests to this operation. Please wait a few minutes and try again.' }
+});
 
 app.get('/api/health', (req, res) => {
   const modeInfo = getStorageMode();
@@ -761,7 +779,7 @@ const getFormattedDate = () => {
   return `${day}-${month}-${year}`;
 };
 
-app.post('/api/upload-excel-images', upload.array('images', 2000), async (req, res) => {
+app.post('/api/upload-excel-images', heavyLimiter, upload.array('images', 2000), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
     const uploadedPaths: string[] = [];
@@ -801,7 +819,7 @@ app.post('/api/upload-excel-images', upload.array('images', 2000), async (req, r
   }
 });
 
-app.post('/api/upload-excel-media-bulk', upload.single('file'), async (req, res) => {
+app.post('/api/upload-excel-media-bulk', heavyLimiter, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -837,7 +855,7 @@ app.post('/api/upload-excel-media-bulk', upload.single('file'), async (req, res)
   }
 });
 
-app.post('/api/admin/migrate-images', async (_req, res) => {
+app.post('/api/admin/migrate-images', heavyLimiter, async (_req, res) => {
   try {
     let migratedCount = 0;
     const brokenImages: any[] = [];
@@ -982,7 +1000,7 @@ app.post('/api/admin/migrate-images', async (_req, res) => {
   }
 });
 
-app.get('/api/export/page/:name(*)', async (req, res) => {
+app.get('/api/export/page/:name(*)', heavyLimiter, async (req, res) => {
   try {
     const { name } = req.params;
     let pageData: any = null;
@@ -1023,7 +1041,7 @@ app.get('/api/export/page/:name(*)', async (req, res) => {
   }
 });
 
-app.get('/api/export', async (_req, res) => {
+app.get('/api/export', heavyLimiter, async (_req, res) => {
   try {
     let state: any = {};
     if (isUsingMongoDB) {
@@ -1085,7 +1103,7 @@ app.get('/api/export', async (_req, res) => {
   }
 });
 
-app.get('/api/export-zip', async (_req, res) => {
+app.get('/api/export-zip', heavyLimiter, async (_req, res) => {
   try {
     let state: any = {};
     if (isUsingMongoDB) {
@@ -1146,7 +1164,7 @@ app.get('/api/export-zip', async (_req, res) => {
   }
 });
 
-app.get('/api/export-zip-verified', async (_req, res) => {
+app.get('/api/export-zip-verified', heavyLimiter, async (_req, res) => {
   let tempFilePath = '';
   try {
     function getDirSize(dirPath: string): number {
@@ -1324,7 +1342,7 @@ app.get('/api/export-zip-verified', async (_req, res) => {
   }
 });
 
-app.get('/api/export-zip/page/:name(*)', async (req, res) => {
+app.get('/api/export-zip/page/:name(*)', heavyLimiter, async (req, res) => {
   try {
     const { name } = req.params;
     let pageData: any = null;
@@ -2749,7 +2767,7 @@ function normalizeBackupPayload(payload: any) {
 }
 
 
-app.post('/api/admin/backfill-thumbnails', async (req, res) => {
+app.post('/api/admin/backfill-thumbnails', heavyLimiter, async (req, res) => {
   try {
     const summary = await backfillThumbnails(UPLOADS_DIR);
     res.json(summary);
@@ -2758,7 +2776,7 @@ app.post('/api/admin/backfill-thumbnails', async (req, res) => {
   }
 });
 
-app.post('/api/admin/hard-clear', async (req, res) => {
+app.post('/api/admin/hard-clear', heavyLimiter, async (req, res) => {
   try {
     let pagesDeleted = 0;
     let rowsDeleted = 0;
@@ -3052,7 +3070,7 @@ app.put('/api/state', async (req, res) => {
   }
 });
 
-app.post('/api/import-zip', upload.single('backup'), async (req, res) => {
+app.post('/api/import-zip', heavyLimiter, upload.single('backup'), async (req, res) => {
   const _diag = {
     start: Date.now(),
     zipSize: 0,
