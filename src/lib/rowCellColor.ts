@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { isCustomColor, parseCustomColor } from "./colorRender";
-import { parseHex, readableTextColor } from "./colorUtils";
+import { parseHex, readableTextColor, Rgb } from "./colorUtils";
 
 export const ROW_COLOR_KEY = "_rowColor";
 
@@ -24,9 +24,14 @@ export function resolveColorValueStyle(
   if (isCustomColor(value)) {
     const parsed = parseCustomColor(value);
     if (!parsed) return null;
+    const blended: Rgb = [
+      Math.round(parsed.rgb[0] * parsed.alpha + 255 * (1 - parsed.alpha)),
+      Math.round(parsed.rgb[1] * parsed.alpha + 255 * (1 - parsed.alpha)),
+      Math.round(parsed.rgb[2] * parsed.alpha + 255 * (1 - parsed.alpha))
+    ];
     return {
       backgroundColor: `rgba(${parsed.rgb[0]}, ${parsed.rgb[1]}, ${parsed.rgb[2]}, ${parsed.alpha})`,
-      color: readableTextColor(parsed.rgb)
+      color: readableTextColor(blended)
     };
   }
   const rgb = parseHex(value);
