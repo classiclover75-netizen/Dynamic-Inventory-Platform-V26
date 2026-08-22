@@ -64,7 +64,7 @@ export function ArchivedSaleSourceAdder({ hiddenSources, onSelect, onOpenChange 
       </button>
       {isOpen && (
         <div 
-          className="absolute left-0 mt-1 w-48 bg-white border shadow-lg rounded z-[99999] flex flex-col"
+          className="absolute left-0 mt-1 w-48 bg-white text-gray-800 border shadow-lg rounded z-[99999] flex flex-col"
           style={{ top: '100%' }}
         >
           <div className="px-2 py-1 text-xs font-bold text-gray-500 uppercase border-b shrink-0">Add Record For:</div>

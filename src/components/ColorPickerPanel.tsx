@@ -13,6 +13,7 @@ import {
   rgbToHsv,
 } from "../lib/colorUtils";
 import { buildCustomColor } from "../lib/colorRender";
+import { getColorName } from "../lib/colorNames";
 
 
 export interface ColorPickerValue {
@@ -514,12 +515,14 @@ export const ColorPickerPanel = React.memo(function ColorPickerPanel({
         ) : (
           savedColors.map(c => {
             const isActive = c === hex;
+            const swatchName = getColorName(c);
+            const swatchLabel = swatchName ? `${c} - ${swatchName}` : c;
             return (
               <span key={c} className="relative w-[26px] h-[26px]">
                 <button
                   type="button"
-                  title={deleteMode ? `Delete ${c}` : c}
-                  aria-label={deleteMode ? `Delete ${c}` : `Use ${c}`}
+                  title={deleteMode ? `Delete ${swatchLabel}` : swatchLabel}
+                  aria-label={deleteMode ? `Delete ${swatchLabel}` : `Use ${swatchLabel}`}
                   aria-pressed={isActive}
                   onClick={() => { 
                     if (deleteMode) {

@@ -591,21 +591,21 @@ export const TableView = ({
                                             >
                                               ✏️
                                             </button>
-                                            <span className="inline-flex opacity-0 pointer-events-none transition-opacity duration-150 group-hover/srcell:opacity-100 group-hover/srcell:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
-                                              <ColorPickerPopover
-                                                value={getRowColor(row) || undefined}
-                                                hideSwatch={true}
-                                                forceIconVisible={true}
-                                                label="Change row colour"
-                                                onChange={(val) => setRowColorPreview({ rowId: String(row.id), color: val.chipClass })}
-                                                onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
-                                                onReset={() => onClearRowColor(rowPageName, row.id)}
-                                                onClose={() => setRowColorPreview(null)}
-                                                className="shrink-0"
-                                              />
-                                            </span>
                                           </div>
                                         </div>
+                                        <span className="absolute bottom-0 right-0 inline-flex opacity-0 pointer-events-none transition-opacity duration-150 group-hover/srcell:opacity-100 group-hover/srcell:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+                                          <ColorPickerPopover
+                                            value={getRowColor(row) || undefined}
+                                            hideSwatch={true}
+                                            forceIconVisible={true}
+                                            label="Change row colour"
+                                            onChange={(val) => setRowColorPreview({ rowId: String(row.id), color: val.chipClass })}
+                                            onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
+                                            onReset={() => onClearRowColor(rowPageName, row.id)}
+                                            onClose={() => setRowColorPreview(null)}
+                                            className="shrink-0"
+                                          />
+                                        </span>
                                       </td>
                                     );
                                   }
@@ -717,7 +717,7 @@ export const TableView = ({
                                               return (
                                                 <div
                                                   key={i}
-                                                  className={`flex items-center justify-between gap-1.5 border border-[#d7e3f6] bg-[#f9fcff] rounded px-1.5 py-0.5 min-h-[25px] ${hideButton ? "bg-gray-50 border-gray-100 opacity-80" : ""}`}
+                                                  className={`flex items-center justify-between gap-1.5 border border-[#d7e3f6] bg-[#f9fcff] text-[#101828] rounded px-1.5 py-0.5 min-h-[25px] ${hideButton ? "bg-gray-50 border-gray-100 opacity-80" : ""}`}
                                                 >
                                                   {hasHtml ? (
                                                     <span
