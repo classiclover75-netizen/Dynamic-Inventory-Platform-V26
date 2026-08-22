@@ -9,6 +9,7 @@ interface ColorPickerPopoverProps {
   value?: string;
   onChange?: (val: ColorPickerValue) => void;
   onCommit?: (val: ColorPickerValue) => void;
+  onReset?: () => void;
   disabled?: boolean;
   label?: string;
   forceIconVisible?: boolean;
@@ -53,6 +54,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
   value,
       onChange,
   onCommit,
+  onReset,
   disabled = false,
   label = "Change colour",
   forceIconVisible = false,
@@ -185,6 +187,14 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     if (onChange) onChange(val);
   }, [onChange]);
 
+  const handleReset = useCallback(() => {
+    latestValueRef.current = null;
+    setShowDiscardWarning(false);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+    if (onReset) onReset();
+  }, [onReset]);
+
   return (
     <span
       className={`relative inline-flex ${className}`}
@@ -245,6 +255,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
             onChange={handleChange}
             onRequestClose={handleRequestClose}
             onConfirm={handleCommit}
+            onReset={onReset ? handleReset : undefined}
           />
           {showDiscardWarning && (
             <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-[10] flex flex-col items-center justify-center p-4 text-center rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-gray-100">

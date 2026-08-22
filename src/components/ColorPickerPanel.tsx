@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pipette, Plus, Trash2, X } from "lucide-react";
+import { Pipette, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import {
   DEFAULT_SAVED_COLORS,
   MAX_SAVED_COLORS,
@@ -28,6 +28,7 @@ interface ColorPickerPanelProps {
   className?: string;
   onRequestClose?: () => void;
   onConfirm?: () => void;
+  onReset?: () => void;
 }
 
 const SAVED_COLORS_STORAGE_KEY = "inventory_saved_colors";
@@ -116,7 +117,8 @@ export const ColorPickerPanel = React.memo(function ColorPickerPanel({
   onChange,
   className = "",
   onRequestClose,
-  onConfirm
+  onConfirm,
+  onReset
 }: ColorPickerPanelProps) {
   const initialSeed = useRef({
     hsv: resolveSeed(initialValue),
@@ -324,17 +326,34 @@ export const ColorPickerPanel = React.memo(function ColorPickerPanel({
       className={`w-[288px] max-w-full bg-white border border-gray-200 rounded-xl shadow-lg p-4 flex flex-col gap-3.5 select-none ${className}`}
       onKeyDown={handleRootKeyDown}
     >
-      {onRequestClose && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={onRequestClose}
-            title="Close"
-            aria-label="Close"
-            className="w-6 h-6 grid place-content-center rounded-md border-none bg-transparent text-gray-500 cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-800 outline-none focus-visible:outline-2 focus-visible:outline-[#2b579a] focus-visible:outline-offset-2"
-          >
-            <X size={16} />
-          </button>
+      {(onRequestClose || onReset) && (
+        <div className="flex justify-between items-center">
+          {onReset ? (
+            <button
+              type="button"
+              onClick={onReset}
+              title="Reset to no colour"
+              aria-label="Reset to no colour"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border-none bg-transparent text-[13px] font-semibold text-gray-700 cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-900 outline-none focus-visible:outline-2 focus-visible:outline-[#2b579a] focus-visible:outline-offset-2"
+            >
+              <RotateCcw size={15} /> Reset
+            </button>
+          ) : (
+            <span />
+          )}
+          {onRequestClose ? (
+            <button
+              type="button"
+              onClick={onRequestClose}
+              title="Close"
+              aria-label="Close"
+              className="w-6 h-6 grid place-content-center rounded-md border-none bg-transparent text-gray-500 cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-800 outline-none focus-visible:outline-2 focus-visible:outline-[#2b579a] focus-visible:outline-offset-2"
+            >
+              <X size={16} />
+            </button>
+          ) : (
+            <span />
+          )}
         </div>
       )}
       
