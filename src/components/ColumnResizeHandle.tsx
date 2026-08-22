@@ -95,7 +95,8 @@ export const ColumnResizeHandle = ({
     
     let val = parseInt(inputValue);
     if (!isNaN(val)) {
-      if (val < 20) val = 20;
+      const minWidth = header?.column?.id === "sr" ? 110 : 20;
+      if (val < minWidth) val = minWidth;
       if (onManualSave) {
         onManualSave(header.column.id, val);
       }

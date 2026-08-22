@@ -198,12 +198,9 @@ export const TableView = ({
             .find((h: any) => h.id === col.key);
           const activeWidth = header
             ? header.getSize()
-            : col.width ||
-              (col.key === "sr"
-                ? state.globalRowNoWidth || 100
-                : col.type === "image"
-                  ? 137
-                  : 150);
+            : col.key === "sr"
+              ? Math.max(col.width || state.globalRowNoWidth || 100, 110)
+              : col.width || (col.type === "image" ? 137 : 150);
           currentLeftOffset += activeWidth;
         }
       });
@@ -332,12 +329,9 @@ export const TableView = ({
                   const isResizing = header?.column?.getIsResizing();
                   const activeWidth = header
                     ? header.getSize()
-                    : col.width ||
-                      (col.key === "sr"
-                        ? state.globalRowNoWidth || 100
-                        : col.type === "image"
-                          ? 137
-                          : 150);
+                    : col.key === "sr"
+                      ? Math.max(col.width || state.globalRowNoWidth || 100, 110)
+                      : col.width || (col.type === "image" ? 137 : 150);
 
                   const defaultWidthClass =
                     col.key === "sr"
@@ -513,12 +507,9 @@ export const TableView = ({
                                     .find((h: any) => h.id === col.key);
                                   const activeWidth = header
                                     ? header.getSize()
-                                    : col.width ||
-                                      (col.key === "sr"
-                                        ? state.globalRowNoWidth || 100
-                                        : col.type === "image"
-                                          ? 137
-                                          : 150);
+                                    : col.key === "sr"
+                                      ? Math.max(col.width || state.globalRowNoWidth || 100, 110)
+                                      : col.width || (col.type === "image" ? 137 : 150);
 
                                   const widthStyle = {
                                     width: `${activeWidth}px`,

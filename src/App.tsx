@@ -85,6 +85,8 @@ import {
   RowData,
 } from "./types";
 
+const ROW_NO_MIN_WIDTH = 110;
+
 const initialConfig: PageConfig = {
   rowReorderEnabled: false,
   hoverPreviewEnabled: false,
@@ -786,7 +788,7 @@ function AppContent() {
           type: "system_serial" as const,
           locked: true,
           movable: false,
-          width: state.globalRowNoWidth || 100,
+          width: Math.max(state.globalRowNoWidth || 100, ROW_NO_MIN_WIDTH),
         },
         ...columnsWithDefaults,
       ],
@@ -1828,12 +1830,10 @@ function AppContent() {
         accessorKey: col.key,
         header: () => col.name,
         size:
-          col.width ||
-          (col.key === "sr"
-            ? state.globalRowNoWidth || 100
-            : col.type === "image"
-              ? 137
-              : 150),
+          col.key === "sr"
+            ? Math.max(col.width || state.globalRowNoWidth || 100, ROW_NO_MIN_WIDTH)
+            : col.width || (col.type === "image" ? 137 : 150),
+        minSize: col.key === "sr" ? ROW_NO_MIN_WIDTH : 20,
       }));
   }, [
     state.activePage,
@@ -1853,12 +1853,10 @@ function AppContent() {
         accessorKey: col.key,
         header: () => col.name,
         size:
-          col.width ||
-          (col.key === "sr"
-            ? state.globalRowNoWidth || 100
-            : col.type === "image"
-              ? 137
-              : 150),
+          col.key === "sr"
+            ? Math.max(col.width || state.globalRowNoWidth || 100, ROW_NO_MIN_WIDTH)
+            : col.width || (col.type === "image" ? 137 : 150),
+        minSize: col.key === "sr" ? ROW_NO_MIN_WIDTH : 20,
       }));
   }, [
     activeConfig.secondarySearchPage,
