@@ -1,4 +1,5 @@
 import { formatCellDisplay } from '../lib/formatCellDisplay';
+import { resolveRowColorStyle } from '../lib/rowCellColor';
 import { parseMultiSource } from "../lib/appUtils";
 import React, { useState, useEffect, useMemo, useDeferredValue } from "react";
 import { Button, Modal, Input } from "./ui";
@@ -343,13 +344,16 @@ export const ManageTrackerColumnsModal = React.memo(({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50">
+                  {filteredRows.map((row) => {
+                    const rowColorStyle = resolveRowColorStyle(row);
+                    return (
+                    <tr key={row.id} className={rowColorStyle ? "" : "hover:bg-gray-50"}>
                       {exportColumns.map((c) => {
                         const rawVal = getCellValue(row, c);
                         return (
                           <td
                             key={c.key}
+                            style={rowColorStyle || undefined}
                             className="p-2 border whitespace-pre-wrap break-words min-w-[150px]"
                           >
                             {(c.type === "image" || c.type === "file") &&
@@ -375,7 +379,8 @@ export const ManageTrackerColumnsModal = React.memo(({
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                   {filteredRows.length === 0 && (
                     <tr>
                       <td

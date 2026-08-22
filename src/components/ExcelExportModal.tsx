@@ -8,6 +8,7 @@ import { Search, ArrowLeft, FileSpreadsheet } from 'lucide-react';
 import { parseMultiSource } from '../lib/appUtils';
 import { isRetired, sumActive } from '../lib/sourceArchiveUtils';
 import { filterAndSortTrackerRows } from '../lib/trackerSortUtils';
+import { resolveRowColorStyle } from '../lib/rowCellColor';
 
 export interface ExcelExportModalProps {
   isOpen: boolean;
@@ -678,9 +679,17 @@ export const ExcelExportModal = React.memo(({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((row) => (
-                    <tr key={row.id} className={selectedRowIds.has(row.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}>
-                      <td className="p-2 border text-center">
+                  {filteredRows.map((row) => {
+                    const rowColorStyle = resolveRowColorStyle(row);
+                    const isRowSelected = selectedRowIds.has(row.id);
+                    const cellStyle = rowColorStyle
+                      ? (isRowSelected
+                          ? { ...rowColorStyle, boxShadow: 'inset 0 2px 0 0 #2b579a, inset 0 -2px 0 0 #2b579a' }
+                          : rowColorStyle)
+                      : undefined;
+                    return (
+                    <tr key={row.id} className={rowColorStyle ? '' : (isRowSelected ? 'bg-blue-50' : 'hover:bg-gray-50')}>
+                      <td style={cellStyle} className="p-2 border text-center">
                         <div className="flex items-center justify-center gap-2">
                           <input 
                             type="checkbox" 
@@ -705,7 +714,7 @@ export const ExcelExportModal = React.memo(({
                       {exportColumns.map(c => {
                         const rawVal = getCellValue(row, c);
                         return (
-                          <td key={c.key} className="p-2 border whitespace-pre-wrap break-words min-w-[150px]">
+                          <td key={c.key} style={cellStyle} className="p-2 border whitespace-pre-wrap break-words min-w-[150px]">
                             {c.type === 'image' && rawVal ? 
                               <img src={getImageUrl(rawVal)} className="h-10 w-10 object-contain mx-auto rounded" alt="img" /> 
                               : highlightText(String(rawVal || ''), deferredSearchQuery)
@@ -714,7 +723,8 @@ export const ExcelExportModal = React.memo(({
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                   {filteredRows.length === 0 && (
                     <tr>
                       <td colSpan={exportColumns.length + 1} className="p-4 text-center text-gray-500 font-medium">

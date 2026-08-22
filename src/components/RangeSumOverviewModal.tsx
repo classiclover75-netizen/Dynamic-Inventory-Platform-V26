@@ -815,13 +815,18 @@ export function RangeSumOverviewModal({
               </tr>
             </thead>
             <tbody>
-              {sortedRows.map((row, i) => (
-                <tr key={row.id} className="hover:bg-gray-50">
-                  <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row')}>
+              {sortedRows.map((row, i) => {
+                const rowColorStyle = resolveRowColorStyle(row);
+                const cellTextClass = rowColorStyle ? '' : 'text-gray-900';
+                const sumTextClass = rowColorStyle ? '' : 'text-blue-700';
+                const innerBgClass = rowColorStyle ? 'bg-transparent' : 'bg-white';
+                return (
+                <tr key={row.id} className={rowColorStyle ? '' : 'hover:bg-gray-50'}>
+                  <td className={getBodyCls('__row', "p-2 border text-center font-bold bg-gray-100")} style={getBodySty('__row', rowColorStyle || undefined)}>
                     {rowNumbers.get(row.id) || (i + 1)}
                   </td>
-                  <td className={getBodyCls('__range_sum', "p-0 border border-black bg-blue-50 text-blue-700 align-top")} style={getBodySty('__range_sum')}>
-                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-transparent', 'text-blue-700', 'border-blue-200', true, true)}
+                  <td className={getBodyCls('__range_sum', "p-0 border border-black bg-blue-50 align-top")} style={getBodySty('__range_sum', rowColorStyle || undefined)}>
+                    {renderMultiSourceCell(JSON.stringify(getRowSumBreakdown(row)), 'bg-transparent', sumTextClass, 'border-blue-200', true, true)}
                   </td>
                   
                   {visibleColumns.map((c: any) => {
@@ -865,7 +870,8 @@ export function RangeSumOverviewModal({
                     );
                   })}
                 </tr>
-              ))}
+                );
+              })}
               {filteredRows.length === 0 && (
                 <tr>
                   <td
