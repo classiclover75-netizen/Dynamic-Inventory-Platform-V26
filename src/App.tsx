@@ -67,6 +67,7 @@ import { useTrackerSourcePreload } from "./hooks/useTrackerSourcePreload";
 import { useTableHover } from "./hooks/useTableHover";
 import { useSaveActions } from "./hooks/useSaveActions";
 import { useInlineEdit } from "./hooks/useInlineEdit";
+import { useRowCellColor } from "./hooks/useRowCellColor";
 import { useSourceColorSync } from "./hooks/useSourceColorSync";
 import { filterAndSortTrackerRows } from "./lib/trackerSortUtils";
 import { findAllLinkedTrackers, buildTrackerOrder } from "./lib/trackerOrderSync";
@@ -760,6 +761,13 @@ function AppContent() {
     toast,
     pendingSavesRef,
     setInlineEdit,
+  });
+
+  const { handleSetRowColor, handleClearRowColor } = useRowCellColor({
+    state,
+    setState,
+    toast,
+    pendingSavesRef,
   });
 
   const handleCreatePage = async (name: string, columns: Column[]) => {
@@ -2284,6 +2292,8 @@ function AppContent() {
             handleSaveInlineEdit={handleSaveInlineEdit}
             handleTableMouseOver={handleTableMouseOver}
             handleTableMouseOut={handleTableMouseOut}
+            onSetRowColor={handleSetRowColor}
+            onClearRowColor={handleClearRowColor}
             getImageUrl={getImageUrl}
             toggleModal={toggleModal}
           />

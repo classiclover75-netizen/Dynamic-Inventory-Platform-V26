@@ -14,6 +14,8 @@ import { getInlineRetiredSourceNames } from '../lib/inlineRetiredHelper';
 import { isLocked, toggleLockInTotalQty } from '../lib/sourceLockUtils';
 import { resolveChipRender, resolveBorderAccent } from '../lib/colorRender';
 import { getCreationTooltip } from '../lib/sourceTimestamp';
+import { ColorPickerPopover } from './ColorPickerPopover';
+import { getRowColor, resolveRowColorStyle } from '../lib/rowCellColor';
 
 export const TableView = ({
   activeFilterSaleCol,
@@ -33,6 +35,7 @@ export const TableView = ({
   onOpenRetiredOverview,
   onOpenActiveSourceOverview,
   handleTableMouseOver, handleTableMouseOut,
+  onSetRowColor, onClearRowColor,
   getImageUrl, toggleModal,
 }: any) => {
   const [containerWidth, setContainerWidth] = React.useState<number | null>(null);
@@ -455,6 +458,11 @@ export const TableView = ({
                         const isRowEditing = inlineEdit?.id?.startsWith(
                           String(row.id) + "-",
                         );
+                        const rowColorStyle = resolveRowColorStyle(row);
+                        const rowIsSelected = !isSecondary && selectedRowIds.has(row.id);
+                        const rowPageName = isSecondary
+                          ? activeConfig.secondarySearchPage
+                          : state.activePage;
                         return (
                               <tr
                                 key={row.id}
@@ -533,6 +541,10 @@ export const TableView = ({
                                       overflow: isResizing
                                         ? ("visible" as const)
                                         : ("hidden" as const),
+                                      ...(rowColorStyle ? rowColorStyle : {}),
+                                      ...(rowColorStyle && rowIsSelected
+                                        ? { boxShadow: "inset 0 2px 0 0 #2b579a, inset 0 -2px 0 0 #2b579a" }
+                                        : {}),
                                     },
                                   };
                                   if (col.key === "sr") {
@@ -540,7 +552,12 @@ export const TableView = ({
                                       <td
                                         key={col.key}
                                         {...commonProps}
-                                        className={`font-normal p-1 border-r-[length:medium] border-b-[length:medium] border-[#e0e0e0] bg-[#f3f3f3] data-[hovered-row=true]:bg-[#fce7f3] overflow-hidden ${pinnedShadowClass}`}
+                                        style={{
+                                          ...commonProps.style,
+                                          backgroundColor: undefined,
+                                          color: undefined,
+                                        }}
+                                        className={`group/srcell font-normal p-1 border-r-[length:medium] border-b-[length:medium] border-[#e0e0e0] bg-[#f3f3f3] data-[hovered-row=true]:bg-[#fce7f3] overflow-hidden ${pinnedShadowClass}`}
                                       >
                                         <div className="flex items-center justify-center gap-0 px-0.5 whitespace-nowrap">
                                           <span className="text-[14px]">
@@ -567,6 +584,17 @@ export const TableView = ({
                                             >
                                               ✏️
                                             </button>
+                                            <span className="inline-flex opacity-0 pointer-events-none transition-opacity duration-150 group-hover/srcell:opacity-100 group-hover/srcell:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+                                              <ColorPickerPopover
+                                                value={getRowColor(row) || undefined}
+                                                hideSwatch={true}
+                                                forceIconVisible={true}
+                                                label="Change row colour"
+                                                onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
+                                                onReset={() => onClearRowColor(rowPageName, row.id)}
+                                                className="shrink-0"
+                                              />
+                                            </span>
                                           </div>
                                         </div>
                                       </td>
@@ -629,7 +657,7 @@ export const TableView = ({
                                             }}
                                           />
                                         ) : (
-                                          <span className="w-full h-full inline-flex items-center justify-center text-[#9e9e9e] text-2xl bg-[#fafafa]">
+                                          <span className={`w-full h-full inline-flex items-center justify-center text-[#9e9e9e] text-2xl ${rowColorStyle ? "bg-transparent" : "bg-[#fafafa]"}`}>
                                             📷
                                           </span>
                                         )}
