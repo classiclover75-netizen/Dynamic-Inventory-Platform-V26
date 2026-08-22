@@ -65,7 +65,59 @@ const RichTextEditor = ({
     }
   };
 
+  const insertPlainText = (text: string) => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    selection.deleteFromDocument();
+    const range = selection.getRangeAt(0);
+
+    // Normalize: If we are at the end of a formatting tag, move out before inserting plain text
+    // to prevent formatting bleed from the previous content.
+    let container = range.startContainer;
+    if (
+      container.nodeType === Node.TEXT_NODE &&
+      range.startOffset === (container.textContent?.length || 0)
+    ) {
+      let parent = container.parentElement;
+      while (parent && parent !== divRef.current) {
+        if (
+          ["B", "I", "U", "S", "SPAN", "STRONG", "EM", "FONT"].includes(
+            parent.tagName,
+          )
+        ) {
+          range.setStartAfter(parent);
+          range.collapse(true);
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "v") {
+      e.preventDefault();
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard
+          .readText()
+          .then((text) => {
+            if (!text) return;
+            insertPlainText(text);
+            if (divRef.current) onChange(divRef.current.innerHTML);
+          })
+          .catch(() => {
+            // Clipboard read permission denied or unavailable; nothing to fall back to here
+            // since the default browser paste action was already prevented.
+          });
+      }
+      return;
+    }
     if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       const selection = window.getSelection();
@@ -115,38 +167,7 @@ const RichTextEditor = ({
     if (!isPlainPaste) {
       document.execCommand("insertHTML", false, html);
     } else {
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) return;
-      selection.deleteFromDocument();
-      const range = selection.getRangeAt(0);
-
-      // Normalize: If we are at the end of a formatting tag, move out before inserting plain text
-      // to prevent formatting bleed from the previous content.
-      let container = range.startContainer;
-      if (
-        container.nodeType === Node.TEXT_NODE &&
-        range.startOffset === (container.textContent?.length || 0)
-      ) {
-        let parent = container.parentElement;
-        while (parent && parent !== divRef.current) {
-          if (
-            ["B", "I", "U", "S", "SPAN", "STRONG", "EM", "FONT"].includes(
-              parent.tagName,
-            )
-          ) {
-            range.setStartAfter(parent);
-            range.collapse(true);
-          }
-          parent = parent.parentElement;
-        }
-      }
-
-      const textNode = document.createTextNode(text);
-      range.insertNode(textNode);
-      range.setStartAfter(textNode);
-      range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
+      insertPlainText(text);
     }
     onChange(e.currentTarget.innerHTML);
   };
