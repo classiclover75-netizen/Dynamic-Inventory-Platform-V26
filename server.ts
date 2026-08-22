@@ -3068,7 +3068,7 @@ app.post('/api/import-zip', upload.single('backup'), async (req, res) => {
     res.setHeader('Transfer-Encoding', 'chunked');
   }
 
-  const sendProgress = (percent, message, file: string | undefined = undefined) => {
+  const sendProgress = (percent: number, message: string, file: string | undefined = undefined) => {
     if (isStream) {
       res.write(JSON.stringify({ type: 'progress', percent, message, file }) + '\n');
     }

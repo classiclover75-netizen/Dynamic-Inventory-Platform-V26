@@ -140,7 +140,7 @@ export function useImportExport(deps: {
         return;
       }
 
-      setState((prev) => ({
+      setState((prev: any) => ({
         ...prev,
         pages: newPages,
         activePage: nextActivePage,

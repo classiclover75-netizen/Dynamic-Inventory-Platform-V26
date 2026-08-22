@@ -116,7 +116,7 @@ export function ActiveSourcesOverviewModal({
     const startW = colWidths[id] ?? th.offsetWidth;
     document.body.style.userSelect = 'none';
     
-    const onMove = (ev) => {
+    const onMove = (ev: MouseEvent) => {
       const newW = Math.max(60, startW + (ev.clientX - startX));
       setColWidths(prev => ({ ...prev, [id]: newW }));
     };

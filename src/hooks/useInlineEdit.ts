@@ -24,7 +24,7 @@ export function useInlineEdit(deps: {
     const idx = updatedRows.findIndex((r) => r.id === rowId);
     if (idx >= 0) {
       updatedRows[idx] = { ...updatedRows[idx], [colKey]: val };
-      setState((prev) => ({
+      setState((prev: any) => ({
         ...prev,
         pageRows: { ...prev.pageRows, [pageName]: updatedRows },
       }));
@@ -56,7 +56,7 @@ export function useInlineEdit(deps: {
         if (isTrackerOwnedField) return;
 
         const trackerRows = state.pageRows[tracker] || [];
-        const tIdx = trackerRows.findIndex((r) => r.id === rowId);
+        const tIdx = trackerRows.findIndex((r: any) => r.id === rowId);
         if (tIdx >= 0) {
           const updatedTrackerRows = [...trackerRows];
           updatedTrackerRows[tIdx] = {
@@ -64,7 +64,7 @@ export function useInlineEdit(deps: {
             [colKey]: val,
           };
 
-          setState((prev) => ({
+          setState((prev: any) => ({
             ...prev,
             pageRows: { ...prev.pageRows, [tracker]: updatedTrackerRows },
           }));
