@@ -179,7 +179,7 @@ app.get('/api/image-usage', async (req, res) => {
       let references = false;
       for (const [key, val] of Object.entries(row)) {
         if (key === 'id') continue;
-        let s = null;
+        let s: string | null = null;
         if (typeof val === 'string') {
           s = val;
         } else if (val && typeof val === 'object' && typeof (val as any).data === 'string') {
@@ -198,7 +198,7 @@ app.get('/api/image-usage', async (req, res) => {
 
     if (isUsingMongoDB) {
       const sortedRows = await getSortedPageRows({});
-      let currentPageName = null;
+      let currentPageName: string | null = null;
       let rowNumber = 0;
       for (const row of sortedRows) {
         if (row.pageName !== currentPageName) {
@@ -291,7 +291,7 @@ async function performLocalBackup() {
       group.push(row.data);
     }
 
-    const localPagesList = [];
+    const localPagesList: any[] = [];
     for (const page of pages) {
       const rowsForPage = rowsByPage.get(page.name) || [];
       localPagesList.push({
@@ -483,7 +483,7 @@ async function processRowImages(row: any, forceSave = false, providedCache?: Map
 
 async function processRowsConcurrently(rows: any[], limit = 50, forceSave = false, providedCache?: Map<string, Promise<string>>) {
   const imageProcessingCache = providedCache || new Map<string, Promise<string>>();
-  const results = [];
+  const results: any[] = [];
   for (let i = 0; i < rows.length; i += limit) {
     const chunk = rows.slice(i, i + limit);
     const chunkResults = await Promise.all(chunk.map(r => processRowImages(r, forceSave, imageProcessingCache)));
@@ -892,7 +892,7 @@ app.post('/api/admin/migrate-images', async (_req, res) => {
     };
 
     const migrateRowsConcurrently = async (rows: any[], pageName: string) => {
-       const mapped = [];
+       const mapped: any[] = [];
        for (let i = 0; i < rows.length; i += 50) {
          const chunk = rows.slice(i, i + 50);
          const chunkResults = await Promise.all(chunk.map(r => migrateRow(r, pageName)));
@@ -1661,7 +1661,7 @@ app.put('/api/pages/:name(*)/rename', async (req, res) => {
         return res.status(409).json({ error: 'A page with that name already exists.' });
       }
 
-      let session = null;
+      let session: mongoose.ClientSession | null = null;
       if (transactionsSupported !== false) {
         try {
           session = await mongoose.startSession();
@@ -1776,7 +1776,7 @@ app.delete('/api/pages/:name(*)', async (req, res) => {
         return res.status(404).json({ error: 'Page not found' });
       }
 
-      let session = null;
+      let session: mongoose.ClientSession | null = null;
       if (transactionsSupported !== false) {
         try {
           session = await mongoose.startSession();
@@ -2061,7 +2061,7 @@ let transactionsSupported: boolean | null = null;
 
 async function executeSafeBulkWrite(bulkOps: any[]) {
   if (!bulkOps || bulkOps.length === 0) return;
-  let session = null;
+  let session: mongoose.ClientSession | null = null;
   if (transactionsSupported !== false) {
     try {
       session = await mongoose.startSession();
@@ -2224,7 +2224,7 @@ app.put('/api/pageRows/:name(*)', async (req, res) => {
       });
       
 
-      let session = null;
+      let session: mongoose.ClientSession | null = null;
       if (transactionsSupported !== false) {
         try {
           session = await mongoose.startSession();
@@ -2304,7 +2304,7 @@ app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
           }
         }
 
-        const bulkOps = [];
+        const bulkOps: any[] = [];
         for (const [rowId, upds] of Object.entries(updates)) {
           const rowToUpdate = rowMap.get(String(rowId));
           if (rowToUpdate) {
@@ -2324,7 +2324,7 @@ app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
         }
       }
       if (order && Array.isArray(order) && order.length > 0) {
-        let session = null;
+        let session: mongoose.ClientSession | null = null;
         try {
           session = await mongoose.startSession();
           session.startTransaction();
@@ -2378,7 +2378,7 @@ app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
 
       if (order && Array.isArray(order)) {
         const rowMap = new Map((page.rows || []).map((r: any) => [String(r.id), r]));
-        const newOrderedRows = [];
+        const newOrderedRows: any[] = [];
         for (const id of order) {
           if (rowMap.has(id)) {
             newOrderedRows.push(rowMap.get(id));
@@ -3068,7 +3068,7 @@ app.post('/api/import-zip', upload.single('backup'), async (req, res) => {
     res.setHeader('Transfer-Encoding', 'chunked');
   }
 
-  const sendProgress = (percent, message, file = undefined) => {
+  const sendProgress = (percent, message, file: string | undefined = undefined) => {
     if (isStream) {
       res.write(JSON.stringify({ type: 'progress', percent, message, file }) + '\n');
     }

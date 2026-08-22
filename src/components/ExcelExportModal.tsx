@@ -228,9 +228,9 @@ export const ExcelExportModal = React.memo(({
         trackerFilter: 'all',
         trackerSort: 'none',
         trackerQtySort: localTrackerQtySort,
-        activeFilterSaleCol,
+        activeFilterSaleCol: activeFilterSaleCol ?? null,
         minStockAlert,
-        linkedSourcePage,
+        linkedSourcePage: linkedSourcePage ?? undefined,
         autoSortBySales,
       });
     }

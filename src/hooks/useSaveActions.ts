@@ -212,7 +212,7 @@ export function useSaveActions(deps: {
       for (const row of newRows) {
         for (const [key, val] of Object.entries(row)) {
           if (key === 'id') continue;
-          let s = null;
+          let s: string | null = null;
           if (typeof val === 'string') {
             s = val;
           } else if (val && typeof val === 'object' && typeof (val as any).data === 'string') {

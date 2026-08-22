@@ -1182,7 +1182,7 @@ export const AddRowModal = React.memo(
                                     className="h-7 text-[10px] px-2 py-0 shrink-0"
                                     onClick={() => {
                                       if (newSourceInput.source) {
-                                        let existingColor = null;
+                                        let existingColor: string | null = null;
                                         const pagesToSearch = allPagesRows ? Object.values(allPagesRows) : (allRows ? [allRows] : []);
                                         for (const rows of pagesToSearch) {
                                           for (const r of rows) {

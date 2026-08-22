@@ -123,7 +123,7 @@ export async function syncDatabaseParity(deps: {
       const pageRows = await getSortedPageRows({});
       const settings = await AppSettings.findOne({});
       
-      const localPagesList = [];
+      const localPagesList: any[] = [];
       for (const page of pages) {
         const rowsForPage = pageRows.filter((r: any) => r.pageName === page.name).map((r: any) => r.data);
         localPagesList.push({

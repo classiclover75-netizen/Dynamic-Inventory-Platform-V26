@@ -387,7 +387,7 @@ export function useTrackerActions(deps: {
     
     setState((prev: any) => {
       // deduplicate rows by ID as a safety net
-      const dedupedRows = [];
+      const dedupedRows: any[] = [];
       const seen = new Set();
       for (const r of updatedTrackerRows) {
         if (!seen.has(r.id)) {

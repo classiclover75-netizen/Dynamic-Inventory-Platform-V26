@@ -32,7 +32,7 @@ export function useOverviewColumnPin(
   const { pinnedOffsets, lastPinnedColId } = useMemo(() => {
     const offsets: Record<string, number> = {};
     let currentOffset = 0;
-    let lastPinned = null;
+    let lastPinned: string | null = null;
     
     if (colIds) {
       for (const colId of colIds) {
