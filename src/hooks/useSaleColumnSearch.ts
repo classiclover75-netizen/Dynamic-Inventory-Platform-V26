@@ -65,6 +65,13 @@ export function useSaleColumnSearch() {
     setLastClickedIdx(null);
   }, []);
 
+  const reset = useCallback(() => {
+    setSearchText("");
+    setSavedTerms([]);
+    setActiveTerms(new Set());
+    setLastClickedIdx(null);
+  }, []);
+
   const effectiveTerms = useMemo(() => {
     const terms = new Set<string>();
     activeTerms.forEach(t => terms.add(t.toLowerCase()));
@@ -84,6 +91,7 @@ export function useSaleColumnSearch() {
     removeTerm,
     selectAll,
     selectNone,
-    clearAll
+    clearAll,
+    reset
   };
 }

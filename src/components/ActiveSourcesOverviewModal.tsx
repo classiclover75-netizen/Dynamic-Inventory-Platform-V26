@@ -80,7 +80,8 @@ export function ActiveSourcesOverviewModal({
     removeTerm: removeSaleTerm,
     selectAll: selectAllSaleTerms,
     selectNone: selectNoneSaleTerms,
-    clearAll: clearAllSaleTerms
+    clearAll: clearAllSaleTerms,
+    reset: resetSaleSearch
   } = useSaleColumnSearch();
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(initialColWidths);
@@ -178,8 +179,13 @@ export function ActiveSourcesOverviewModal({
         setSelectedSources(new Set(allNames));
       }
       setSearchQuery("");
+      setSortBy("Recently Added");
+      setSortDir('asc');
+      setShowAllStatuses(false);
+      setSourceSearchQuery("");
+      resetSaleSearch();
     }
-  }, [isOpen, overviewData, initialSelectedSources]);
+  }, [isOpen, overviewData, initialSelectedSources, resetSaleSearch]);
 
   const getImageUrl = (val: any) => {
     if (!val) return "";

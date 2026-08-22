@@ -99,17 +99,6 @@ export function RangeSumOverviewModal({
 
   useEffect(() => {
     if (isOpen) {
-      selectAll(orderedSaleColKeys);
-      setShowSaleColumns(true);
-      setSearchQuery("");
-      setSelectedSources(new Set(allUniqueSourcesInfo.map(s => s.source)));
-      setShowSourceDropdown(false);
-      setSourceSearchQuery("");
-    }
-  }, [isOpen, selectAll, orderedSaleColKeys, allUniqueSourcesInfo]);
-
-  useEffect(() => {
-    if (isOpen) {
       setColWidths(initialColWidthsRef.current || {});
     }
   }, [isOpen]);
@@ -125,8 +114,23 @@ export function RangeSumOverviewModal({
     removeTerm: removeSaleTerm,
     selectAll: selectAllSaleTerms,
     selectNone: selectNoneSaleTerms,
-    clearAll: clearAllSaleTerms
+    clearAll: clearAllSaleTerms,
+    reset: resetSaleSearch
   } = useSaleColumnSearch();
+
+  useEffect(() => {
+    if (isOpen) {
+      selectAll(orderedSaleColKeys);
+      setShowSaleColumns(true);
+      setSearchQuery("");
+      setSelectedSources(new Set(allUniqueSourcesInfo.map(s => s.source)));
+      setShowSourceDropdown(false);
+      setSourceSearchQuery("");
+      setSortBy("Default");
+      setSortDir('asc');
+      resetSaleSearch();
+    }
+  }, [isOpen, selectAll, orderedSaleColKeys, allUniqueSourcesInfo, resetSaleSearch]);
 
   const visibleColumns = useMemo(() => {
     return columns.filter(c => {
