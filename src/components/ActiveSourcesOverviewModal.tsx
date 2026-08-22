@@ -612,6 +612,13 @@ export function ActiveSourcesOverviewModal({
                 Show Sale Columns
              </label>
              {showSaleColumns && (
+               <div className="flex items-center gap-1">
+                 <button onClick={() => selectAll(orderedSaleColKeys)} className="text-xs font-medium text-blue-600 hover:underline">Select all columns</button>
+                 <span className="text-gray-300">|</span>
+                 <button onClick={() => clear()} className="text-xs font-medium text-gray-500 hover:underline">Select none columns</button>
+               </div>
+             )}
+             {showSaleColumns && (
                <div className="flex items-center gap-2">
                  <div className="relative shrink-0">
                    <Search className="absolute left-2 top-2.5 text-gray-400" size={16} />
