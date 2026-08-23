@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Button } from "./ui";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, LogOut, Users } from "lucide-react";
 import { useToast } from "./ToastProvider";
+import { useAuth } from "../hooks/useAuthSession";
+import { ManageUsersModal } from "./ManageUsersModal";
 
 export const TopHeaderBar = ({
   activePage,
@@ -20,7 +23,10 @@ export const TopHeaderBar = ({
   setIsDeletePageModalOpen,
 }: any) => {
   const { toast } = useToast();
+  const { username, role, logout } = useAuth();
+  const [showManageUsers, setShowManageUsers] = useState(false);
   return (
+    <>
       <div className="flex justify-between items-center bg-white border border-[#d8d8d8] rounded-md p-2 px-2.5">
         <div className="text-[19px] font-bold text-[#2c3e50]">
           📦 Dynamic Inventory Platform{" "}
@@ -241,7 +247,20 @@ export const TopHeaderBar = ({
               onChange={handleImportData}
             />
           </div>
+          <div className="text-xs font-bold text-[#607d8b] px-1.5 hidden sm:block">
+            {username}
+          </div>
+          {role === "master" && (
+            <Button variant="outline" onClick={() => setShowManageUsers(true)}>
+              <Users size={14} /> Manage Users
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => logout()}>
+            <LogOut size={14} /> Logout
+          </Button>
         </div>
       </div>
+      <ManageUsersModal isOpen={showManageUsers} onClose={() => setShowManageUsers(false)} />
+    </>
   );
 };
