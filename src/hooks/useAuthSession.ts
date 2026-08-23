@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { installAuthFetchGuard, setUnauthorizedListener } from '../lib/authFetchGuard';
 
 export type AuthStatus = 'loading' | 'setup' | 'login' | 'authed';
 export type AuthRole = 'master' | 'slave';
@@ -79,6 +80,16 @@ export function useAuthSession() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    installAuthFetchGuard();
+    setUnauthorizedListener(() => {
+      setStatus('login');
+      setUsername(null);
+      setRole(null);
+    });
+    return () => setUnauthorizedListener(null);
+  }, []);
 
   const login = useCallback(async (name: string, password: string, rememberMe: boolean): Promise<string | null> => {
     try {

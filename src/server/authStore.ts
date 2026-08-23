@@ -18,6 +18,7 @@ export interface AuthSessionRecord {
   token: string;
   username: string;
   role: AuthRole;
+  rememberMe: boolean;
   expiresAt: string;
   createdAt: string;
 }
@@ -44,6 +45,7 @@ const authSessionSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true },
   username: { type: String, required: true },
   role: { type: String, required: true },
+  rememberMe: { type: Boolean, required: true, default: false },
   expiresAt: { type: String, required: true },
   createdAt: { type: String, required: true }
 });
@@ -98,6 +100,12 @@ function expiryIso(rememberMe: boolean): string {
     ? REMEMBER_ME_DAYS * 24 * 60 * 60 * 1000
     : SHORT_SESSION_HOURS * 60 * 60 * 1000;
   return new Date(Date.now() + ms).toISOString();
+}
+
+function windowMs(rememberMe: boolean): number {
+  return rememberMe
+    ? REMEMBER_ME_DAYS * 24 * 60 * 60 * 1000
+    : SHORT_SESSION_HOURS * 60 * 60 * 1000;
 }
 
 export function validateUsername(username: unknown): string | null {
@@ -201,6 +209,7 @@ export async function createSession(user: AuthUserRecord, rememberMe: boolean): 
     token: crypto.randomBytes(32).toString('hex'),
     username: user.username,
     role: user.role,
+    rememberMe,
     expiresAt: expiryIso(rememberMe),
     createdAt: nowIso()
   };
@@ -230,7 +239,19 @@ export async function getSession(token: unknown): Promise<AuthSessionRecord | nu
     await deleteSession(token);
     return null;
   }
-  return session;
+  const rememberMe = session.rememberMe === true;
+  const newExpiresAt = new Date(Date.now() + windowMs(rememberMe)).toISOString();
+  if (isMongoMode()) {
+    await AuthSession.updateOne({ token }, { $set: { expiresAt: newExpiresAt } });
+  } else {
+    const data = await readAuthFile();
+    const idx = data.sessions.findIndex((s) => s.token === token);
+    if (idx !== -1) {
+      data.sessions[idx].expiresAt = newExpiresAt;
+      await writeAuthFile(data);
+    }
+  }
+  return { ...session, expiresAt: newExpiresAt };
 }
 
 export async function deleteSession(token: unknown): Promise<void> {
