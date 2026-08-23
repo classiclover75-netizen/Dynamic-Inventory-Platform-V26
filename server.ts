@@ -119,6 +119,7 @@ const apiLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/auth', createAuthRouter());
 app.use('/api', requireAuth);
+app.use('/uploads', requireAuth);
 
 const heavyLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
