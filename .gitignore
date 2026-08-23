@@ -7,4 +7,5 @@ coverage/
 .env*
 !.env.example
 db.json
+auth.json
 uploads/

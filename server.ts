@@ -16,6 +16,8 @@ import multer from 'multer';
 import { getPartnerPageNames } from './src/server/trackerLinkGuard';
 import { connectDatabase, syncDatabaseParity, getStorageMode } from './src/server/dbConnection';
 import { sendSafeError } from './src/server/errorResponse';
+import { createAuthRouter } from './src/server/authRoutes';
+import { requireAuth } from './src/server/requireAuth';
 
 
 const upload = multer({
@@ -115,6 +117,8 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down and try again shortly.' }
 });
 app.use('/api', apiLimiter);
+app.use('/api/auth', createAuthRouter());
+app.use('/api', requireAuth);
 
 const heavyLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
