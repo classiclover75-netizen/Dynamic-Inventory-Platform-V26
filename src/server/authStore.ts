@@ -73,7 +73,7 @@ async function readAuthFile(): Promise<AuthFileShape> {
 }
 
 async function writeAuthFile(data: AuthFileShape): Promise<void> {
-  const tmpPath = AUTH_FILE_PATH + '.tmp';
+  const tmpPath = `${AUTH_FILE_PATH}.tmp`;
   await fs.promises.writeFile(tmpPath, JSON.stringify(data));
   await fs.promises.rename(tmpPath, AUTH_FILE_PATH);
 }
