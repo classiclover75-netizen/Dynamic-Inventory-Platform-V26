@@ -595,19 +595,21 @@ export const TableView = ({
                                             </button>
                                           </div>
                                         </div>
-                                        <span className="absolute bottom-0 right-0 inline-flex opacity-0 pointer-events-none transition-opacity duration-150 group-hover/srcell:opacity-100 group-hover/srcell:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
-                                          <ColorPickerPopover
-                                            value={getRowColor(row) || undefined}
-                                            hideSwatch={true}
-                                            forceIconVisible={true}
-                                            label="Change row colour"
-                                            onChange={(val) => setRowColorPreview({ rowId: String(row.id), color: val.chipClass })}
-                                            onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
-                                            onReset={() => onClearRowColor(rowPageName, row.id)}
-                                            onClose={() => setRowColorPreview(null)}
-                                            className="shrink-0"
-                                          />
-                                        </span>
+                                        {!config?.isTrackerPage && (
+                                          <span className="absolute bottom-0 right-0 inline-flex opacity-0 pointer-events-none transition-opacity duration-150 group-hover/srcell:opacity-100 group-hover/srcell:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+                                            <ColorPickerPopover
+                                              value={getRowColor(row) || undefined}
+                                              hideSwatch={true}
+                                              forceIconVisible={true}
+                                              label="Change row colour"
+                                              onChange={(val) => setRowColorPreview({ rowId: String(row.id), color: val.chipClass })}
+                                              onCommit={(val) => onSetRowColor(rowPageName, row.id, val.chipClass)}
+                                              onReset={() => onClearRowColor(rowPageName, row.id)}
+                                              onClose={() => setRowColorPreview(null)}
+                                              className="shrink-0"
+                                            />
+                                          </span>
+                                        )}
                                       </td>
                                     );
                                   }
