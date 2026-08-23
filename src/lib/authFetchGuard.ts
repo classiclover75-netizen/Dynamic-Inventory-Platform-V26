@@ -24,17 +24,26 @@ export function installAuthFetchGuard(): void {
   if (guardInstalled) return;
   guardInstalled = true;
 
-  const originalFetch = window.fetch.bind(window);
+  try {
+    const originalFetch = window.fetch.bind(window);
 
-  window.fetch = async (...args: Parameters<typeof fetch>) => {
-    const response = await originalFetch(...args);
-    try {
-      const url = resolveUrl(args[0]);
-      if (response.status === 401 && url.startsWith('/api') && !isAuthBootstrapCall(url) && activeListener) {
-        activeListener();
+    const wrappedFetch = async (...args: Parameters<typeof fetch>) => {
+      const response = await originalFetch(...args);
+      try {
+        const url = resolveUrl(args[0]);
+        if (response.status === 401 && url.startsWith('/api') && !isAuthBootstrapCall(url) && activeListener) {
+          activeListener();
+        }
+      } catch {
       }
-    } catch {
-    }
-    return response;
-  };
+      return response;
+    };
+
+    Object.defineProperty(window, 'fetch', {
+      value: wrappedFetch,
+      writable: true,
+      configurable: true
+    });
+  } catch {
+  }
 }
