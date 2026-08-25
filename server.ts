@@ -292,6 +292,8 @@ async function saveLocalDB(data: any) {
 let localBackupTimeout: NodeJS.Timeout | null = null;
 let isBackupRunning = false;
 let pendingBackup = false;
+let pendingBackupPages = new Set<string>();
+let pendingFullBackup = false;
 
 async function performLocalBackup() {
   if (!isUsingMongoDB) return;
@@ -300,55 +302,94 @@ async function performLocalBackup() {
     return;
   }
   isBackupRunning = true;
+  const doFull = pendingFullBackup;
+  const pagesToSync = new Set(pendingBackupPages);
+  pendingFullBackup = false;
+  pendingBackupPages = new Set();
   try {
-    const pages = await Page.find({});
-    const pageRows = await getSortedPageRows({});
-    const settings = await AppSettings.findOne({});
-    
-    const rowsByPage = new Map();
-    for (const row of pageRows) {
-      const pName = row.pageName;
-      let group = rowsByPage.get(pName);
-      if (!group) {
-        group = [];
-        rowsByPage.set(pName, group);
-      }
-      group.push(row.data);
-    }
+    if (doFull) {
+      const pages = await Page.find({});
+      const pageRows = await getSortedPageRows({});
+      const settings = await AppSettings.findOne({});
 
-    const localPagesList: any[] = [];
-    for (const page of pages) {
-      const rowsForPage = rowsByPage.get(page.name) || [];
-      localPagesList.push({
-        name: page.name,
-        config: page.config,
-        rows: rowsForPage
-      });
+      const rowsByPage = new Map();
+      for (const row of pageRows) {
+        const pName = row.pageName;
+        let group = rowsByPage.get(pName);
+        if (!group) {
+          group = [];
+          rowsByPage.set(pName, group);
+        }
+        group.push(row.data);
+      }
+
+      const localPagesList: any[] = [];
+      for (const page of pages) {
+        const rowsForPage = rowsByPage.get(page.name) || [];
+        localPagesList.push({
+          name: page.name,
+          config: page.config,
+          rows: rowsForPage
+        });
+      }
+
+      const newLocalDb = {
+        pages: localPagesList,
+        settings: settings ? {
+          globalCopyBoxes: settings.globalCopyBoxes,
+          globalRowNoWidth: settings.globalRowNoWidth,
+          maxSearchHistory: settings.maxSearchHistory,
+          sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled
+        } : {}
+      };
+      await saveLocalDB(newLocalDb);
+    } else if (pagesToSync.size > 0) {
+      const current = await getLocalDB();
+      if (!Array.isArray(current.pages)) current.pages = [];
+
+      for (const pageName of pagesToSync) {
+        const pageDoc = await Page.findOne({ name: pageName });
+        const idx = current.pages.findIndex((p: any) => p.name === pageName);
+
+        if (!pageDoc) {
+          if (idx !== -1) current.pages.splice(idx, 1);
+          continue;
+        }
+
+        const rows = await getSortedPageRows({ pageName });
+        const entry = {
+          name: pageDoc.name,
+          config: pageDoc.config,
+          rows: rows.map((r: any) => r.data)
+        };
+
+        if (idx !== -1) {
+          current.pages[idx] = entry;
+        } else {
+          current.pages.push(entry);
+        }
+      }
+
+      await saveLocalDB(current);
     }
-    
-    const newLocalDb = {
-      pages: localPagesList,
-      settings: settings ? {
-        globalCopyBoxes: settings.globalCopyBoxes,
-        globalRowNoWidth: settings.globalRowNoWidth,
-        maxSearchHistory: settings.maxSearchHistory,
-        sourceSuggestionsEnabled: settings.sourceSuggestionsEnabled
-      } : {}
-    };
-    await fs.promises.writeFile(LOCAL_DB_PATH, JSON.stringify(newLocalDb));
   } catch (err) {
     console.error('Failed to update local db.json backup:', err);
   } finally {
     isBackupRunning = false;
     if (pendingBackup) {
       pendingBackup = false;
-      triggerLocalBackup(0);
+      performLocalBackup();
     }
   }
 }
 
-function triggerLocalBackup(delayMs = 3000): Promise<void> {
+function triggerLocalBackup(pageName?: string, delayMs = 3000): Promise<void> {
   if (!isUsingMongoDB) return Promise.resolve();
+  if (pageName) {
+    pendingBackupPages.add(pageName);
+  } else {
+    pendingFullBackup = true;
+  }
   if (localBackupTimeout) {
     clearTimeout(localBackupTimeout);
   }
@@ -2293,7 +2334,7 @@ app.put('/api/pageRows/:name(*)', async (req, res) => {
       }
       const updatedPage = await Page.findOneAndUpdate({ name }, { $inc: { rowsVersion: 1 } }, { new: true });
       rowsVersion = updatedPage?.rowsVersion || 0;
-      await triggerLocalBackup();
+      await triggerLocalBackup(name);
     } else {
       const db = await getLocalDB();
       const page = db.pages.find((p: any) => p.name === name);
@@ -2386,7 +2427,7 @@ app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
           }
         }
       }
-      await triggerLocalBackup();
+      await triggerLocalBackup(name);
     } else {
       const db = await getLocalDB();
       const page = db.pages.find((p: any) => p.name === name);
@@ -2447,7 +2488,7 @@ app.patch('/api/pageRows/:name(*)/:rowId', async (req, res) => {
 
       await PageRow.findByIdAndUpdate(rowToUpdate._id, { data: processedRow });
       await cleanupOrphanImages([oldRowData], [processedRow]);
-      await triggerLocalBackup();
+      await triggerLocalBackup(name);
     } else {
       const db = await getLocalDB();
       const page = db.pages.find((p: any) => p.name === name);
@@ -2551,7 +2592,7 @@ app.post('/api/pageRows/:name(*)/append', async (req, res) => {
       }
       const updatedPage = await Page.findOneAndUpdate({ name }, { $inc: { rowsVersion: 1 } }, { new: true });
       rowsVersion = updatedPage?.rowsVersion || 0;
-      await triggerLocalBackup();
+      await triggerLocalBackup(name);
     } else {
       const db = await getLocalDB();
       const page = db.pages.find((p: any) => p.name === name);
@@ -2586,7 +2627,7 @@ app.delete('/api/pageRows/:name(*)/:rowId', async (req, res) => {
       
       const updatedPage = await Page.findOneAndUpdate({ name }, { $inc: { rowsVersion: 1 } }, { new: true });
       rowsVersion = updatedPage?.rowsVersion || 0;
-      await triggerLocalBackup();
+      await triggerLocalBackup(name);
     } else {
       const db = await getLocalDB();
       const page = db.pages.find((p: any) => p.name === name);
