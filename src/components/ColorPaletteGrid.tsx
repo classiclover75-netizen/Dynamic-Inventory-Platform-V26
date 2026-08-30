@@ -18,8 +18,10 @@ interface ColorPaletteGridProps {
   onReset?: () => void;
 }
 
-function swatchClass(size: number): string {
-  return `w-[${size}px] h-[${size}px] rounded-full border border-gray-200 flex items-center justify-center cursor-pointer transition-transform hover:scale-125 origin-center p-0`;
+const SWATCH_CLASS = "rounded-full border border-gray-200 flex items-center justify-center cursor-pointer transition-transform hover:scale-125 origin-center p-0";
+
+function swatchStyle(size: number): React.CSSProperties {
+  return { width: `${size}px`, height: `${size}px` };
 }
 
 export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
@@ -74,8 +76,8 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
                 title={color}
                 aria-label={color}
                 onClick={() => onSelect(color)}
-                className={swatchClass(21)}
-                style={{ backgroundColor: color }}
+                className={SWATCH_CLASS}
+                style={{ ...swatchStyle(21), backgroundColor: color }}
               >
                 {isSelected && (
                   <svg className="w-3 h-3 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -103,8 +105,8 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
               title={color}
               aria-label={color}
               onClick={() => onSelect(color)}
-              className={swatchClass(23)}
-              style={{ backgroundColor: color }}
+              className={SWATCH_CLASS}
+              style={{ ...swatchStyle(23), backgroundColor: color }}
             >
               {isSelected && (
                 <svg className="w-3.5 h-3.5 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
