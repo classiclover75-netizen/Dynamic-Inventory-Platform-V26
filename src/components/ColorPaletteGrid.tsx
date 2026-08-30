@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { DropletOff, Pipette, Plus, Trash2, X } from "lucide-react";
 import {
   MAIN_PRESET_GRID,
@@ -33,17 +33,24 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
   const [savedColors, setSavedColors] = useState(() => readSavedColors());
   const [deleteMode, setDeleteMode] = useState(false);
 
-  const selectedHex = parseColorToPickerValue(value)?.hex.toLowerCase();
+  const currentHex = parseColorToPickerValue(value)?.hex;
+  const selectedHex = currentHex?.toLowerCase();
   const eyeDropperSupported = isEyeDropperSupported();
 
-  useEffect(() => {
-    if (!selectedHex) return;
-    const inMainGrid = MAIN_PRESET_GRID.some(row => row.some(c => c.toLowerCase() === selectedHex));
-    const inStandard = STANDARD_COLORS.some(c => c.toLowerCase() === selectedHex);
-    const inSaved = savedColors.some(c => c.toLowerCase() === selectedHex);
-    if (inMainGrid || inStandard || inSaved) return;
-    setSavedColors(addSavedColor(selectedHex.toUpperCase()));
-  }, [selectedHex]);
+  const inMainGrid = selectedHex
+    ? MAIN_PRESET_GRID.some(row => row.some(c => c.toLowerCase() === selectedHex))
+    : false;
+  const inStandard = selectedHex
+    ? STANDARD_COLORS.some(c => c.toLowerCase() === selectedHex)
+    : false;
+  const isCurrentSaved = selectedHex
+    ? savedColors.some(c => c.toLowerCase() === selectedHex)
+    : false;
+
+  // Shows the box's current colour in the CUSTOM row for this viewing only,
+  // without writing it to the saved-colours list. Only "+" and the eyedropper save permanently.
+  const showCurrentAsTemporary = Boolean(currentHex) && !inMainGrid && !inStandard && !isCurrentSaved;
+  const customDisplayColors = showCurrentAsTemporary ? [...savedColors, currentHex as string] : savedColors;
 
   const handleEyeDropper = useCallback(async () => {
     const hex = await pickColorFromScreen();
@@ -164,15 +171,16 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
         >
           <Pipette size={16} className="text-gray-600" />
         </button>
-        {savedColors.map(color => {
+        {customDisplayColors.map(color => {
           const isSelected = color.toLowerCase() === selectedHex;
+          const isPersisted = savedColors.some(c => c.toLowerCase() === color.toLowerCase());
           return (
             <span key={color} className="relative w-6 h-6">
               <button
                 type="button"
-                title={deleteMode ? `Delete ${color}` : color}
-                aria-label={deleteMode ? `Delete ${color}` : `Use ${color}`}
-                onClick={() => (deleteMode ? handleRemoveSaved(color) : onSelect(color))}
+                title={deleteMode && isPersisted ? `Delete ${color}` : color}
+                aria-label={deleteMode && isPersisted ? `Delete ${color}` : `Use ${color}`}
+                onClick={() => (deleteMode && isPersisted ? handleRemoveSaved(color) : onSelect(color))}
                 className="w-full h-full rounded-full border border-gray-300 cursor-pointer hover:scale-110 transition-transform p-0"
                 style={{ backgroundColor: color }}
               >
@@ -182,7 +190,7 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
                   </svg>
                 )}
               </button>
-              {deleteMode && (
+              {deleteMode && isPersisted && (
                 <span className="absolute -top-1 -left-1 w-[14px] h-[14px] rounded-full bg-white border border-gray-300 shadow-sm grid place-content-center pointer-events-none z-[2]">
                   <X size={9} strokeWidth={3} className="text-gray-700" />
                 </span>
