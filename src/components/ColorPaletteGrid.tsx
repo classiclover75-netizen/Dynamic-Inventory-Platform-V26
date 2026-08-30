@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { DropletOff, Pipette, Plus, Trash2, X } from "lucide-react";
 import {
   MAIN_PRESET_GRID,
@@ -35,6 +35,15 @@ export const ColorPaletteGrid = React.memo(function ColorPaletteGrid({
 
   const selectedHex = parseColorToPickerValue(value)?.hex.toLowerCase();
   const eyeDropperSupported = isEyeDropperSupported();
+
+  useEffect(() => {
+    if (!selectedHex) return;
+    const inMainGrid = MAIN_PRESET_GRID.some(row => row.some(c => c.toLowerCase() === selectedHex));
+    const inStandard = STANDARD_COLORS.some(c => c.toLowerCase() === selectedHex);
+    const inSaved = savedColors.some(c => c.toLowerCase() === selectedHex);
+    if (inMainGrid || inStandard || inSaved) return;
+    setSavedColors(addSavedColor(selectedHex.toUpperCase()));
+  }, [selectedHex]);
 
   const handleEyeDropper = useCallback(async () => {
     const hex = await pickColorFromScreen();
