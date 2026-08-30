@@ -22,6 +22,15 @@ interface ColorPickerPopoverProps {
 const PANEL_MARGIN = 8;
 const VIEWPORT_PADDING = 8;
 
+// Shared across every mounted ColorPickerPopover instance so opening one
+// can force-close any other that is still open, and so a click outside
+// any picker can close whichever one is currently open.
+const activeClosers = new Set<() => void>();
+
+function closeAllPickers(): void {
+  activeClosers.forEach(fn => fn());
+}
+
 function useCanHover() {
   const [canHover, setCanHover] = useState(true);
   useEffect(() => {
@@ -134,6 +143,21 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     triggerRef.current?.focus();
   }, []);
 
+  // Closes this instance without focusing its trigger or asking about unsaved
+  // changes, used when a different picker takes over or the page is clicked.
+  const forceCloseSelf = useCallback(() => {
+    setShowDiscardWarning(false);
+    setIsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    activeClosers.add(forceCloseSelf);
+    return () => {
+      activeClosers.delete(forceCloseSelf);
+    };
+  }, [isOpen, forceCloseSelf]);
+
   const commitValue = useCallback((val: ColorPickerValue) => {
     latestValueRef.current = val;
     if (onChange) onChange(val);
@@ -201,6 +225,22 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     };
   }, [isOpen, handleRequestClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      const insideTrigger = triggerRef.current?.contains(target);
+      const insidePanel = panelRef.current?.contains(target);
+      if (!insideTrigger && !insidePanel) {
+        handleRequestClose();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, { capture: true });
+    };
+  }, [isOpen, handleRequestClose]);
+
   const handleCustomChange = useCallback((val: ColorPickerValue) => {
     latestValueRef.current = val;
     if (onChange) onChange(val);
@@ -245,6 +285,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
           if (isOpen) {
             handleRequestClose();
           } else {
+            closeAllPickers();
             initialValueRef.current = value;
             latestValueRef.current = null;
             setShowDiscardWarning(false);
