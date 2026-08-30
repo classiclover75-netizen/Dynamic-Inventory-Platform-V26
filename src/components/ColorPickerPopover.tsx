@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from "react-dom";
 import { Palette } from "lucide-react";
 import { ColorPickerPanel, ColorPickerValue } from "./ColorPickerPanel";
+import { ColorPaletteGrid } from "./ColorPaletteGrid";
 import { parseHex } from "../lib/colorUtils";
 import { CUSTOM_PREFIX, parseCustomColor, parseColorToPickerValue } from "../lib/colorRender";
 
@@ -36,8 +37,6 @@ function useCanHover() {
       return () => mq.removeListener(sync);
     }
   }, []);
-  // touch screens report false and there the icon must stay visible, 
-  // because a hover-only control is unreachable on a phone or tablet.
   return canHover;
 }
 
@@ -64,6 +63,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
   className = ""
 }: ColorPickerPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState<"palette" | "custom">("palette");
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -89,13 +89,12 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
   const canHover = useCanHover();
 
   const swatchColor = resolveSwatchColor(value);
-  // On a hover-capable device the icon hides until it is wanted, anywhere else it stays put.
   const iconVisible = !canHover || isHovered || hasFocus || isOpen || forceIconVisible;
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const panelW = panelRef.current ? panelRef.current.offsetWidth : 288;
+    const panelW = panelRef.current ? panelRef.current.offsetWidth : 280;
     const panelH = panelRef.current ? panelRef.current.offsetHeight : 380;
 
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -117,7 +116,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
       return;
     }
     updatePosition();
-  }, [isOpen, updatePosition]);
+  }, [isOpen, updatePosition, view]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -129,19 +128,34 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     };
   }, [isOpen, updatePosition]);
 
-  const handleCommit = useCallback(() => {
-    setIsOpen(false);
-    setShowDiscardWarning(false);
-    triggerRef.current?.focus();
-    if (latestValueRef.current && onCommit) {
-      onCommit(latestValueRef.current);
-    }
-  }, [onCommit]);
-
   const handleClose = useCallback(() => {
     setShowDiscardWarning(false);
     setIsOpen(false);
     triggerRef.current?.focus();
+  }, []);
+
+  const commitValue = useCallback((val: ColorPickerValue) => {
+    latestValueRef.current = val;
+    if (onChange) onChange(val);
+    setShowDiscardWarning(false);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+    if (onCommit) onCommit(val);
+  }, [onChange, onCommit]);
+
+  const handlePaletteSelect = useCallback((hex: string) => {
+    const parsed = parseColorToPickerValue(hex);
+    if (parsed) {
+      commitValue(parsed);
+    }
+  }, [commitValue]);
+
+  const handleOpenCustom = useCallback(() => {
+    setView("custom");
+  }, []);
+
+  const handleBackToPalette = useCallback(() => {
+    setView("palette");
   }, []);
 
   const handleDiscard = useCallback(() => {
@@ -159,19 +173,19 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
   }, [onChange]);
 
   const handleRequestClose = useCallback(() => {
-    if (!latestValueRef.current) {
+    if (view !== "custom" || !latestValueRef.current) {
       handleClose();
       return;
     }
-    
+
     const initialParsed = parseColorToPickerValue(initialValueRef.current);
     if (initialParsed && initialParsed.chipClass.toLowerCase() === latestValueRef.current.chipClass.toLowerCase()) {
       handleClose();
       return;
     }
-    
+
     setShowDiscardWarning(true);
-  }, [handleDiscard, handleClose]);
+  }, [view, handleClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -187,10 +201,16 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
     };
   }, [isOpen, handleRequestClose]);
 
-  const handleChange = useCallback((val: ColorPickerValue) => {
+  const handleCustomChange = useCallback((val: ColorPickerValue) => {
     latestValueRef.current = val;
     if (onChange) onChange(val);
   }, [onChange]);
+
+  const handleCustomConfirm = useCallback(() => {
+    if (latestValueRef.current) {
+      commitValue(latestValueRef.current);
+    }
+  }, [commitValue]);
 
   const handleReset = useCallback(() => {
     latestValueRef.current = null;
@@ -228,6 +248,7 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
             initialValueRef.current = value;
             latestValueRef.current = null;
             setShowDiscardWarning(false);
+            setView("palette");
             setIsOpen(true);
           }
         }}
@@ -254,14 +275,23 @@ export const ColorPickerPopover = React.memo(function ColorPickerPopover({
             visibility: position ? "visible" : "hidden"
           }}
         >
-                    <ColorPickerPanel
-            key={String(openCount)}
-            initialValue={value}
-            onChange={handleChange}
-            onRequestClose={handleRequestClose}
-            onConfirm={handleCommit}
-            onReset={onReset ? handleReset : undefined}
-          />
+          {view === "palette" ? (
+            <ColorPaletteGrid
+              key={String(openCount)}
+              value={value}
+              onSelect={handlePaletteSelect}
+              onOpenCustom={handleOpenCustom}
+              onReset={onReset ? handleReset : undefined}
+            />
+          ) : (
+            <ColorPickerPanel
+              key={String(openCount)}
+              initialValue={value}
+              onChange={handleCustomChange}
+              onRequestClose={handleBackToPalette}
+              onConfirm={handleCustomConfirm}
+            />
+          )}
           {showDiscardWarning && (
             <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-[10] flex flex-col items-center justify-center p-4 text-center rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-gray-100">
               <p className="text-[13px] font-semibold text-gray-800 mb-1">Discard colour change?</p>
