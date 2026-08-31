@@ -104,8 +104,7 @@ function deleteImageFile(filename: string) {
   }
 }
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
 app.set('trust proxy', 1);
 
@@ -1684,7 +1683,7 @@ app.get('/api/pages/:name(*)', async (req, res) => {
   }
 });
 
-app.post('/api/pages', async (req, res) => {
+app.post('/api/pages', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { name, config } = req.body;
     if (isUsingMongoDB) {
@@ -1705,7 +1704,7 @@ app.post('/api/pages', async (req, res) => {
   }
 });
 
-app.put('/api/pages/:name(*)/rename', async (req, res) => {
+app.put('/api/pages/:name(*)/rename', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { name } = req.params;
     const { newName } = req.body;
@@ -2086,7 +2085,7 @@ app.get('/api/url-image-size', async (req, res) => {
   }
 });
 
-app.post('/api/pages/update-config', async (req, res) => {
+app.post('/api/pages/update-config', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { pageName, name, config } = req.body;
     const finalPageName = name || pageName;
@@ -2105,7 +2104,7 @@ app.post('/api/pages/update-config', async (req, res) => {
   }
 });
 
-app.put('/api/pageConfigs/:name(*)', async (req, res) => {
+app.put('/api/pageConfigs/:name(*)', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { name } = req.params;
     const { config } = req.body;
@@ -2167,7 +2166,7 @@ async function executeSafeBulkWrite(bulkOps: any[]) {
     }
   }
 }
-app.put('/api/pageRows/:name(*)', async (req, res) => {
+app.put('/api/pageRows/:name(*)', express.json({ limit: '100mb' }), async (req, res) => {
   try {
     let rowsVersion = 0;
     const { name } = req.params;
@@ -2354,7 +2353,7 @@ app.put('/api/pageRows/:name(*)', async (req, res) => {
   }
 });
 
-app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
+app.patch('/api/pageRows/:name(*)/bulk', express.json({ limit: '100mb' }), async (req, res) => {
   try {
     const { name } = req.params;
     const { order, updates } = req.body;
@@ -2470,7 +2469,7 @@ app.patch('/api/pageRows/:name(*)/bulk', async (req, res) => {
   }
 });
 
-app.patch('/api/pageRows/:name(*)/:rowId', async (req, res) => {
+app.patch('/api/pageRows/:name(*)/:rowId', express.json({ limit: '15mb' }), async (req, res) => {
   try {
     const { name, rowId } = req.params;
     const { updates } = req.body;
@@ -2517,7 +2516,7 @@ app.patch('/api/pageRows/:name(*)/:rowId', async (req, res) => {
   }
 });
 
-app.post('/api/pageRows/:name(*)/append', async (req, res) => {
+app.post('/api/pageRows/:name(*)/append', express.json({ limit: '100mb' }), async (req, res) => {
   try {
     let rowsVersion = 0;
     const { name } = req.params;
@@ -2650,7 +2649,7 @@ app.delete('/api/pageRows/:name(*)/:rowId', requireMaster, async (req, res) => {
   }
 });
 
-app.put('/api/settings', async (req, res) => {
+app.put('/api/settings', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { globalCopyBoxes, globalRowNoWidth, maxSearchHistory, pageOrder, sourceSuggestionsEnabled } = req.body;
     if (isUsingMongoDB) {
@@ -2876,7 +2875,7 @@ app.post('/api/admin/hard-clear', heavyLimiter, requireMaster, async (req, res) 
   }
 });
 
-app.put('/api/state', async (req, res) => {
+app.put('/api/state', express.json({ limit: '100mb' }), async (req, res) => {
   try {
     const payload = req.body;
     const { newState, importType, pagesToUpdate, isBundle, isSinglePage } = normalizeBackupPayload(payload);
