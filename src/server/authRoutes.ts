@@ -73,7 +73,7 @@ export function createAuthRouter(): express.Router {
         return;
       }
       const session = await createSession(user, false);
-      setSessionCookie(res, session.token, false);
+      setSessionCookie(req, res, session.token, false);
       res.json({ success: true, username: user.username, role: user.role });
     } catch (err) {
       console.error('Auth setup error', err);
@@ -95,7 +95,7 @@ export function createAuthRouter(): express.Router {
         return;
       }
       const session = await createSession(user, rememberMe);
-      setSessionCookie(res, session.token, rememberMe);
+      setSessionCookie(req, res, session.token, rememberMe);
       res.json({ success: true, username: user.username, role: user.role });
     } catch (err) {
       console.error('Auth login error', err);
@@ -106,11 +106,11 @@ export function createAuthRouter(): express.Router {
   router.post('/logout', async (req, res) => {
     try {
       await deleteSession(readSessionToken(req));
-      clearSessionCookie(res);
+      clearSessionCookie(req, res);
       res.json({ success: true });
     } catch (err) {
       console.error('Auth logout error', err);
-      clearSessionCookie(res);
+      clearSessionCookie(req, res);
       res.json({ success: true });
     }
   });

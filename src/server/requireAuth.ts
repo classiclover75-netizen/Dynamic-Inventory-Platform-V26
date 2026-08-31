@@ -29,11 +29,11 @@ export function readSessionToken(req: any): string | null {
   return typeof token === 'string' && token.length > 0 ? token : null;
 }
 
-export function setSessionCookie(res: any, token: string, rememberMe: boolean): void {
+export function setSessionCookie(req: any, res: any, token: string, rememberMe: boolean): void {
   const options: Record<string, any> = {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: !!req?.secure,
     path: '/'
   };
   if (rememberMe) {
@@ -42,11 +42,11 @@ export function setSessionCookie(res: any, token: string, rememberMe: boolean): 
   res.cookie(SESSION_COOKIE_NAME, token, options);
 }
 
-export function clearSessionCookie(res: any): void {
+export function clearSessionCookie(req: any, res: any): void {
   res.clearCookie(SESSION_COOKIE_NAME, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: !!req?.secure,
     path: '/'
   });
 }
