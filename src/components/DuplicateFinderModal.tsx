@@ -3,6 +3,7 @@ import { formatCellDisplay } from '../lib/formatCellDisplay';
 import { Modal, Button } from './ui';
 import { RowData, Column } from '../types';
 import { Trash2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuthSession';
 
 export interface DuplicateFinderModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const DuplicateFinderModal = React.memo(({
   columns,
   onDeleteRow,
 }: DuplicateFinderModalProps) => {
+  const { role } = useAuth();
+  const canDelete = role !== 'slave';
   // Find duplicates by comparing all data values in a row (excluding system keys)
   const duplicateGroups = useMemo(() => {
     if (!isOpen || !rows || rows.length === 0) return [];
@@ -85,7 +88,9 @@ export const DuplicateFinderModal = React.memo(({
                               {col.name}
                             </th>
                           ))}
-                        <th className="w-[80px] text-center p-2 font-semibold text-gray-600">Action</th>
+                        {canDelete && (
+                          <th className="w-[80px] text-center p-2 font-semibold text-gray-600">Action</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -102,16 +107,18 @@ export const DuplicateFinderModal = React.memo(({
                                 </td>
                               );
                             })}
-                          <td className="p-2 text-center">
-                            <Button
-                              variant="red"
-                              onClick={() => onDeleteRow(row.id)}
-                              className="px-2 py-1"
-                              title="Delete this duplicate"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </Button>
-                          </td>
+                          {canDelete && (
+                            <td className="p-2 text-center">
+                              <Button
+                                variant="red"
+                                onClick={() => onDeleteRow(row.id)}
+                                className="px-2 py-1"
+                                title="Delete this duplicate"
+                              >
+                                <Trash2 size={14} /> Delete
+                              </Button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

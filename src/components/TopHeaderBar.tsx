@@ -143,15 +143,17 @@ export const TopHeaderBar = ({
                 <div className="text-[11px] font-bold text-red-600 border-b border-red-100 mb-2 mt-3 pb-1.5 uppercase tracking-wide">
                   DANGER ZONE
                 </div>
-                <button
-                  className="w-full text-left border-0 rounded bg-orange-50 text-orange-700 text-xs font-bold p-2 cursor-pointer hover:bg-orange-100 mb-1 mt-1"
-                  onClick={() => {
-                    setShowTopSettings(false);
-                    setIsDeletePageModalOpen(true);
-                  }}
-                >
-                  🗑️ Delete Page
-                </button>
+                {role !== "slave" && (
+                  <button
+                    className="w-full text-left border-0 rounded bg-orange-50 text-orange-700 text-xs font-bold p-2 cursor-pointer hover:bg-orange-100 mb-1 mt-1"
+                    onClick={() => {
+                      setShowTopSettings(false);
+                      setIsDeletePageModalOpen(true);
+                    }}
+                  >
+                    🗑️ Delete Page
+                  </button>
+                )}
 
                 <button
                   className="w-full text-left border-0 rounded bg-blue-50 text-blue-700 text-xs font-bold p-2 cursor-pointer hover:bg-blue-100 mb-2"
@@ -224,19 +226,21 @@ export const TopHeaderBar = ({
                 >
                   🖼️ Backfill Thumbnails
                 </button>
-                <button
-                  className="w-full text-left border-0 rounded bg-red-50 text-red-700 text-xs font-bold p-2 cursor-pointer hover:bg-red-100 mb-1"
-                  onClick={() => {
-                    setShowTopSettings(false);
-                    setClearDBModal({
-                      isOpen: true,
-                      step: 1,
-                      yesLeft: Math.random() > 0.5,
-                    });
-                  }}
-                >
-                  🗑️ Clear DB (Zero State)
-                </button>
+                {role !== "slave" && (
+                  <button
+                    className="w-full text-left border-0 rounded bg-red-50 text-red-700 text-xs font-bold p-2 cursor-pointer hover:bg-red-100 mb-1"
+                    onClick={() => {
+                      setShowTopSettings(false);
+                      setClearDBModal({
+                        isOpen: true,
+                        step: 1,
+                        yesLeft: Math.random() > 0.5,
+                      });
+                    }}
+                  >
+                    🗑️ Clear DB (Zero State)
+                  </button>
+                )}
               </div>
             )}
             <input

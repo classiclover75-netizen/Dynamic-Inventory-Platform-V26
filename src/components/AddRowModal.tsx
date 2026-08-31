@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button, Input, Modal } from "./ui";
 import { Column, RowData } from "../types";
 import { useToast } from "./ToastProvider";
+import { useAuth } from "../hooks/useAuthSession";
 import {
   Trash2,
   Plus,
@@ -256,6 +257,7 @@ export const AddRowModal = React.memo(
     onPropagateSourceColors?: (page: string, changes: SourceColorChange[], excludeRowId?: string) => void;
   }) => {
     const { toast } = useToast();
+    const { role } = useAuth();
     const [blocks, setBlocks] = useState<Record<string, any>[]>([{}]);
     const [magicPasteText, setMagicPasteText] = useState("");
     const [imageModes, setImageModes] = useState<
@@ -1750,7 +1752,7 @@ export const AddRowModal = React.memo(
               Back to Workspace
             </Button>
           )}
-          {!isLiveTracker && editingRow && onDelete && (
+          {!isLiveTracker && editingRow && onDelete && role !== "slave" && (
             <Button
               variant="red"
               onClick={() => {
