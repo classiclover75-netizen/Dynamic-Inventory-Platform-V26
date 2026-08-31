@@ -17,7 +17,7 @@ import { getPartnerPageNames } from './src/server/trackerLinkGuard';
 import { connectDatabase, syncDatabaseParity, getStorageMode } from './src/server/dbConnection';
 import { sendSafeError } from './src/server/errorResponse';
 import { createAuthRouter } from './src/server/authRoutes';
-import { requireAuth } from './src/server/requireAuth';
+import { requireAuth, requireMaster } from './src/server/requireAuth';
 
 
 const upload = multer({
@@ -1834,7 +1834,7 @@ app.put('/api/pages/:name(*)/rename', async (req, res) => {
 });
 
 
-app.delete('/api/pages/:name(*)', async (req, res) => {
+app.delete('/api/pages/:name(*)', requireMaster, async (req, res) => {
   try {
     const { name } = req.params;
     let deletedRows: any[] = [];
@@ -2610,7 +2610,7 @@ app.post('/api/pageRows/:name(*)/append', async (req, res) => {
   }
 });
 
-app.delete('/api/pageRows/:name(*)/:rowId', async (req, res) => {
+app.delete('/api/pageRows/:name(*)/:rowId', requireMaster, async (req, res) => {
   try {
     let rowsVersion = 0;
     const { name, rowId } = req.params;
@@ -2826,7 +2826,7 @@ app.post('/api/admin/backfill-thumbnails', heavyLimiter, async (req, res) => {
   }
 });
 
-app.post('/api/admin/hard-clear', heavyLimiter, async (req, res) => {
+app.post('/api/admin/hard-clear', heavyLimiter, requireMaster, async (req, res) => {
   try {
     let pagesDeleted = 0;
     let rowsDeleted = 0;
