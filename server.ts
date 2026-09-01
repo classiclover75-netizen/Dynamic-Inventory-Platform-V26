@@ -106,7 +106,7 @@ function deleteImageFile(filename: string) {
 
 app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
-app.set('trust proxy', '172.28.61.0/24');
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,

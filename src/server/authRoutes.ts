@@ -30,6 +30,7 @@ const loginLimiter = rateLimit({
 
 export function createAuthRouter(): express.Router {
   const router = express.Router();
+  router.use(express.json({ limit: '2mb' }));
 
   router.get('/status', async (req, res) => {
     try {
