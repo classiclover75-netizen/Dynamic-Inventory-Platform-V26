@@ -287,6 +287,15 @@ async function saveLocalDB(data: any) {
   await fs.promises.rename(tmpPath, LOCAL_DB_PATH);
 }
 
+let dbMutexTail: Promise<void> = Promise.resolve();
+function acquireDbLock(): Promise<() => void> {
+  let releaseFn: () => void = () => {};
+  const willRelease = new Promise<void>((resolve) => { releaseFn = resolve; });
+  const acquired = dbMutexTail.then(() => releaseFn);
+  dbMutexTail = dbMutexTail.then(() => willRelease);
+  return acquired;
+}
+
 
 let localBackupTimeout: NodeJS.Timeout | null = null;
 let isBackupRunning = false;
@@ -1024,21 +1033,26 @@ app.post('/api/admin/migrate-images', heavyLimiter, async (_req, res) => {
         }
       }
     } else {
-      const db = await getLocalDB();
-      for (const page of db.pages) {
-        if (!page.rows || page.rows.length === 0) continue;
-        const results = await migrateRowsConcurrently(page.rows, page.name);
-        const newRows = results.map((r: any) => r.newRow);
-        const thisPageMigratedCount = results.reduce((sum: number, r: any) => sum + r.imageMigratedCount, 0);
-        
-        if (thisPageMigratedCount > 0) {
-          migratedCount += thisPageMigratedCount;
-          await cleanupOrphanImages(page.rows, newRows);
-          page.rows = newRows;
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        for (const page of db.pages) {
+          if (!page.rows || page.rows.length === 0) continue;
+          const results = await migrateRowsConcurrently(page.rows, page.name);
+          const newRows = results.map((r: any) => r.newRow);
+          const thisPageMigratedCount = results.reduce((sum: number, r: any) => sum + r.imageMigratedCount, 0);
+
+          if (thisPageMigratedCount > 0) {
+            migratedCount += thisPageMigratedCount;
+            await cleanupOrphanImages(page.rows, newRows);
+            page.rows = newRows;
+          }
         }
-      }
-      if (migratedCount > 0) {
-        await saveLocalDB(db);
+        if (migratedCount > 0) {
+          await saveLocalDB(db);
+        }
+      } finally {
+        release();
       }
     }
 
@@ -1691,9 +1705,14 @@ app.post('/api/pages', express.json({ limit: '2mb' }), async (req, res) => {
       await newPage.save();
       await triggerLocalBackup();
     } else {
-      const db = await getLocalDB();
-      db.pages.push({ name, config, rows: [] });
-      await saveLocalDB(db);
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        db.pages.push({ name, config, rows: [] });
+        await saveLocalDB(db);
+      } finally {
+        release();
+      }
     }
     res.json({ success: true });
   } catch (err: any) {
@@ -1800,27 +1819,32 @@ app.put('/api/pages/:name(*)/rename', express.json({ limit: '2mb' }), async (req
 
       await triggerLocalBackup();
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (!page) {
-        return res.status(404).json({ error: 'Page not found' });
-      }
-      if (db.pages.some((p: any) => p.name === trimmedNewName)) {
-        return res.status(409).json({ error: 'A page with that name already exists.' });
-      }
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (!page) {
+          return res.status(404).json({ error: 'Page not found' });
+        }
+        if (db.pages.some((p: any) => p.name === trimmedNewName)) {
+          return res.status(409).json({ error: 'A page with that name already exists.' });
+        }
 
-      page.name = trimmedNewName;
-      
-      db.pages.forEach((p: any) => {
-        if (p.config && p.config.linkedSourcePage === name) {
-          p.config.linkedSourcePage = trimmedNewName;
-        }
-        if (p.config && p.config.secondarySearchPage === name) {
-          p.config.secondarySearchPage = trimmedNewName;
-        }
-      });
-      
-      await saveLocalDB(db);
+        page.name = trimmedNewName;
+        
+        db.pages.forEach((p: any) => {
+          if (p.config && p.config.linkedSourcePage === name) {
+            p.config.linkedSourcePage = trimmedNewName;
+          }
+          if (p.config && p.config.secondarySearchPage === name) {
+            p.config.secondarySearchPage = trimmedNewName;
+          }
+        });
+        
+        await saveLocalDB(db);
+      } finally {
+        release();
+      }
     }
 
     res.json({ success: true });
@@ -1926,33 +1950,38 @@ app.delete('/api/pages/:name(*)', requireMaster, async (req, res) => {
 
       await triggerLocalBackup();
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (!page) {
-        return res.status(404).json({ error: 'Page not found' });
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (!page) {
+          return res.status(404).json({ error: 'Page not found' });
+        }
+        
+        deletedRows = page.rows || [];
+        db.pages = db.pages.filter((p: any) => p.name !== name);
+        
+        const linkedPageNames: string[] = [];
+        db.pages = db.pages.filter((p: any) => {
+          if (p.config && p.config.linkedSourcePage === name) {
+            linkedPageNames.push(p.name);
+            if (p.rows) deletedRows.push(...p.rows);
+            return false;
+          }
+          return true;
+        });
+        
+        const allDeletedNames = [name, ...linkedPageNames];
+        db.pages.forEach((p: any) => {
+          if (p.config && p.config.secondarySearchPage && allDeletedNames.includes(p.config.secondarySearchPage)) {
+            delete p.config.secondarySearchPage;
+          }
+        });
+        
+        await saveLocalDB(db);
+      } finally {
+        release();
       }
-      
-      deletedRows = page.rows || [];
-      db.pages = db.pages.filter((p: any) => p.name !== name);
-      
-      const linkedPageNames: string[] = [];
-      db.pages = db.pages.filter((p: any) => {
-        if (p.config && p.config.linkedSourcePage === name) {
-          linkedPageNames.push(p.name);
-          if (p.rows) deletedRows.push(...p.rows);
-          return false;
-        }
-        return true;
-      });
-      
-      const allDeletedNames = [name, ...linkedPageNames];
-      db.pages.forEach((p: any) => {
-        if (p.config && p.config.secondarySearchPage && allDeletedNames.includes(p.config.secondarySearchPage)) {
-          delete p.config.secondarySearchPage;
-        }
-      });
-      
-      await saveLocalDB(db);
     }
     await cleanupOrphanImages(deletedRows, [], false, name);
     res.json({ success: true });
@@ -2093,10 +2122,15 @@ app.post('/api/pages/update-config', express.json({ limit: '2mb' }), async (req,
       await Page.findOneAndUpdate({ name: finalPageName }, { config });
       await triggerLocalBackup();
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === finalPageName);
-      if (page) page.config = config;
-      await saveLocalDB(db);
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === finalPageName);
+        if (page) page.config = config;
+        await saveLocalDB(db);
+      } finally {
+        release();
+      }
     }
     res.json({ success: true });
   } catch (err: any) {
@@ -2112,10 +2146,15 @@ app.put('/api/pageConfigs/:name(*)', express.json({ limit: '2mb' }), async (req,
       await Page.findOneAndUpdate({ name }, { config });
       await triggerLocalBackup();
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (page) page.config = config;
-      await saveLocalDB(db);
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (page) page.config = config;
+        await saveLocalDB(db);
+      } finally {
+        release();
+      }
     }
     res.json({ success: true });
   } catch (err: any) {
@@ -2335,14 +2374,19 @@ app.put('/api/pageRows/:name(*)', express.json({ limit: '100mb' }), async (req, 
       rowsVersion = updatedPage?.rowsVersion || 0;
       await triggerLocalBackup(name);
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (page) {
-        const isTracker = page.config?.linkedSourcePage;
-        const newRows = (isTracker || skipImageProcessing) ? rowsToProcess : await processRowsConcurrently(rowsToProcess, 50, forceSave);
-        page.rows = newRows;
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (page) {
+          const isTracker = page.config?.linkedSourcePage;
+          const newRows = (isTracker || skipImageProcessing) ? rowsToProcess : await processRowsConcurrently(rowsToProcess, 50, forceSave);
+          page.rows = newRows;
+        }
+        await saveLocalDB(db);
+      } finally {
+        release();
       }
-      await saveLocalDB(db);
     }
     res.json({ success: true, rowsVersion });
   } catch (err: any) {
@@ -2428,36 +2472,41 @@ app.patch('/api/pageRows/:name(*)/bulk', express.json({ limit: '100mb' }), async
       }
       await triggerLocalBackup(name);
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (!page) return res.status(404).json({ error: 'Page not found' });
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (!page) return res.status(404).json({ error: 'Page not found' });
 
-      if (updates && Object.keys(updates).length > 0) {
-        for (const [rowId, upds] of Object.entries(updates)) {
-          const idx = page.rows?.findIndex((r: any) => String(r.id) === String(rowId));
-          if (idx !== undefined && idx !== -1) {
-            const newRowData = { ...page.rows[idx], ...(upds as any) };
-            const processedRow = await processRowImages(newRowData, forceSave);
-            page.rows[idx] = processedRow;
+        if (updates && Object.keys(updates).length > 0) {
+          for (const [rowId, upds] of Object.entries(updates)) {
+            const idx = page.rows?.findIndex((r: any) => String(r.id) === String(rowId));
+            if (idx !== undefined && idx !== -1) {
+              const newRowData = { ...page.rows[idx], ...(upds as any) };
+              const processedRow = await processRowImages(newRowData, forceSave);
+              page.rows[idx] = processedRow;
+            }
           }
         }
-      }
 
-      if (order && Array.isArray(order)) {
-        const rowMap = new Map((page.rows || []).map((r: any) => [String(r.id), r]));
-        const newOrderedRows: any[] = [];
-        for (const id of order) {
-          if (rowMap.has(id)) {
-            newOrderedRows.push(rowMap.get(id));
-            rowMap.delete(id);
+        if (order && Array.isArray(order)) {
+          const rowMap = new Map((page.rows || []).map((r: any) => [String(r.id), r]));
+          const newOrderedRows: any[] = [];
+          for (const id of order) {
+            if (rowMap.has(id)) {
+              newOrderedRows.push(rowMap.get(id));
+              rowMap.delete(id);
+            }
           }
+          for (const r of rowMap.values()) {
+             newOrderedRows.push(r);
+          }
+          page.rows = newOrderedRows;
         }
-        for (const r of rowMap.values()) {
-           newOrderedRows.push(r);
-        }
-        page.rows = newOrderedRows;
+        await saveLocalDB(db);
+      } finally {
+        release();
       }
-      await saveLocalDB(db);
     }
 
     res.json({ success: true });
@@ -2489,22 +2538,27 @@ app.patch('/api/pageRows/:name(*)/:rowId', express.json({ limit: '15mb' }), asyn
       await cleanupOrphanImages([oldRowData], [processedRow]);
       await triggerLocalBackup(name);
     } else {
-      const db = await getLocalDB();
-      const page = db.pages.find((p: any) => p.name === name);
-      if (!page) return res.status(404).json({ error: 'Page not found' });
+      const release = await acquireDbLock();
+      try {
+        const db = await getLocalDB();
+        const page = db.pages.find((p: any) => p.name === name);
+        if (!page) return res.status(404).json({ error: 'Page not found' });
 
-      const idx = page.rows?.findIndex((r: any) => String(r.id) === String(rowId));
-      if (idx === undefined || idx === -1) {
-        return res.status(404).json({ error: 'Row not found' });
+        const idx = page.rows?.findIndex((r: any) => String(r.id) === String(rowId));
+        if (idx === undefined || idx === -1) {
+          return res.status(404).json({ error: 'Row not found' });
+        }
+
+        const oldRowData = { ...page.rows[idx] };
+        const newRowData = { ...page.rows[idx], ...updates };
+        const processedRow = await processRowImages(newRowData, forceSave);
+
+        page.rows[idx] = processedRow;
+        await saveLocalDB(db);
+        await cleanupOrphanImages([oldRowData], [processedRow]);
+      } finally {
+        release();
       }
-
-      const oldRowData = { ...page.rows[idx] };
-      const newRowData = { ...page.rows[idx], ...updates };
-      const processedRow = await processRowImages(newRowData, forceSave);
-
-      page.rows[idx] = processedRow;
-      await saveLocalDB(db);
-      await cleanupOrphanImages([oldRowData], [processedRow]);
     }
 
     res.json({ success: true });
